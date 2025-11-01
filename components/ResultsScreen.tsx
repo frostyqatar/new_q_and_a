@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { Team } from '@/lib/types'
-import { Trophy, RotateCcw, Home } from 'lucide-react'
+import { Trophy, RotateCcw, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ResultsScreenProps {
@@ -112,7 +112,7 @@ export function ResultsScreen({
               size="lg"
               className="px-8 py-6 text-lg"
             >
-              <Home className="w-5 h-5 ml-2" />
+              <Sparkles className="w-5 h-5 ml-2" />
               لعبة جديدة
             </Button>
           </div>

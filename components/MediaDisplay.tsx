@@ -24,7 +24,7 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
             <img
               src={media.url}
               alt="Question media"
-              className="max-w-md w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+              className="max-w-md w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-all duration-300 border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
               onClick={() => setImageModalOpen(true)}
               onError={(e) => {
                 const target = e.target as HTMLImageElement
@@ -33,11 +33,11 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
             />
           </div>
           <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-4xl backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl">
               <img
                 src={media.url}
                 alt="Question media"
-                className="max-w-full h-auto rounded-lg"
+                className="max-w-full h-auto rounded-lg border border-white/30 shadow-lg"
               />
             </DialogContent>
           </Dialog>
@@ -50,7 +50,7 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
           <video
             src={media.url}
             controls
-            className="max-w-md w-full h-auto rounded-lg"
+            className="max-w-md w-full h-auto rounded-lg border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
             onError={(e) => {
               const target = e.target as HTMLVideoElement
               target.style.display = 'none'
@@ -67,7 +67,8 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
           <audio
             src={media.url}
             controls
-            className="w-full"
+            preload="metadata"
+            className="w-full rounded-lg"
             onError={(e) => {
               const target = e.target as HTMLAudioElement
               target.style.display = 'none'
@@ -81,10 +82,10 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
     case 'youtube':
       return (
         <div className={`${className} flex justify-center`}>
-          <div className="relative w-full max-w-md" style={{ paddingBottom: '56.25%' }}>
+          <div className="relative w-full max-w-md backdrop-blur-sm bg-white/10 border-2 border-white/30 rounded-lg shadow-lg shadow-purple-500/10 p-1" style={{ paddingBottom: '56.25%' }}>
             <iframe
               src={`https://www.youtube.com/embed/${media.url}`}
-              className="absolute top-0 left-0 w-full h-full rounded-lg"
+              className="absolute top-1 left-1 w-[calc(100%-0.5rem)] h-[calc(100%-0.5rem)] rounded-lg"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

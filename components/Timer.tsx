@@ -58,11 +58,11 @@ export function Timer({
   const isLowTime = displayTime <= 10
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <Clock className={cn('w-5 h-5', isLowTime && 'text-red-500 animate-pulse')} />
+    <div className={cn('flex items-center gap-2 backdrop-blur-md bg-white/40 border border-white/50 rounded-lg px-4 py-2 shadow-lg shadow-purple-500/10', className)}>
+      <Clock className={cn('w-5 h-5 text-gray-800', isLowTime && 'text-red-500 animate-pulse')} />
       <div className={cn(
-        'text-3xl font-bold font-mono',
-        isLowTime && 'text-red-500'
+        'text-3xl font-bold font-mono text-gray-800',
+        isLowTime && 'text-red-600'
       )}>
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
       </div>
@@ -71,9 +71,9 @@ export function Timer({
           variant="ghost"
           size="icon"
           onClick={onPause}
-          className="h-8 w-8"
+          className="h-8 w-8 backdrop-blur-sm bg-white/30 hover:bg-white/50 border border-white/40 rounded-md"
         >
-          <Pause className="h-4 w-4" />
+          <Pause className="h-4 w-4 text-gray-800" />
         </Button>
       )}
       {isPaused && (
@@ -81,9 +81,9 @@ export function Timer({
           variant="ghost"
           size="icon"
           onClick={onResume}
-          className="h-8 w-8"
+          className="h-8 w-8 backdrop-blur-sm bg-white/30 hover:bg-white/50 border border-white/40 rounded-md"
         >
-          <Play className="h-4 w-4" />
+          <Play className="h-4 w-4 text-gray-800" />
         </Button>
       )}
     </div>

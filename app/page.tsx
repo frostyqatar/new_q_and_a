@@ -165,7 +165,6 @@ export default function HomeScreen() {
           <CardTitle 
             className="text-4xl font-semibold"
             style={{ 
-              fontFamily: '"The Year of Handicrafts", "Noto Sans Arabic", serif',
               color: '#800020',
               fontWeight: 600,
               letterSpacing: '0.02em'

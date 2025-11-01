@@ -1,8 +1,12 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import localFont from "next/font/local"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const yearOfHandicrafts = localFont({
+  src: "../fonts/TheYearofHandicrafts-SemiBold.otf",
+  variable: "--font-year-of-handicrafts",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Quick Q&A Game",
@@ -28,7 +32,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={`${yearOfHandicrafts.variable} font-sans`}>{children}</body>
     </html>
   )
 }
