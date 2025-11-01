@@ -7,7 +7,7 @@ import { Timer } from '@/components/Timer'
 import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
 import type { Team, Question } from '@/lib/types'
-import { CheckCircle2, XCircle, Trophy } from 'lucide-react'
+import { CheckCircle2, XCircle, Trophy, ArrowLeft } from 'lucide-react'
 
 interface ModeratorScreenProps {
   team1: Team
@@ -28,6 +28,8 @@ interface ModeratorScreenProps {
   onTimeUp: () => void
   onTimerTick?: (timeLeft: number) => void
   onEndGame: () => void
+  onNextQuestion: () => void
+  isAnswerRevealed: boolean
   viewMode: 'public' | 'moderator'
 }
 
@@ -46,6 +48,8 @@ export function ModeratorScreen({
   onTimeUp,
   onTimerTick,
   onEndGame,
+  onNextQuestion,
+  isAnswerRevealed,
   viewMode,
 }: ModeratorScreenProps) {
   if (!currentQuestion) {
@@ -84,41 +88,67 @@ export function ModeratorScreen({
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center">
-                  {currentQuestion.question}
-                </div>
+                {!isAnswerRevealed ? (
+                  <>
+                    <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center">
+                      {currentQuestion.question}
+                    </div>
 
-                {currentQuestion.code && (
-                  <div className="mt-6 flex justify-center">
-                    <CodeDisplay code={currentQuestion.code} />
-                  </div>
+                    {currentQuestion.code && (
+                      <div className="mt-6 flex justify-center">
+                        <CodeDisplay code={currentQuestion.code} />
+                      </div>
+                    )}
+
+                    {currentQuestion.media && (
+                      <div className="mt-6">
+                        <MediaDisplay media={currentQuestion.media} />
+                      </div>
+                    )}
+
+                    <div className="flex gap-4 justify-center pt-4">
+                      <Button
+                        onClick={onCorrect}
+                        size="lg"
+                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg"
+                      >
+                        <CheckCircle2 className="w-6 h-6 ml-2" />
+                        صحيح
+                      </Button>
+                      <Button
+                        onClick={onIncorrect}
+                        size="lg"
+                        variant="destructive"
+                        className="px-8 py-6 text-lg"
+                      >
+                        <XCircle className="w-6 h-6 ml-2" />
+                        خطأ
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-center space-y-4">
+                      <div className="text-xl text-muted-foreground mb-2">
+                        الإجابة الصحيحة:
+                      </div>
+                      <div className="text-4xl font-bold text-green-600 bg-green-50 p-6 rounded-lg whitespace-pre-line min-h-[120px] flex items-center justify-center">
+                        {currentQuestion.answer}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        onClick={onNextQuestion}
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-8 py-6 text-lg"
+                      >
+                        السؤال التالي
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                      </Button>
+                    </div>
+                  </>
                 )}
-
-                {currentQuestion.media && (
-                  <div className="mt-6">
-                    <MediaDisplay media={currentQuestion.media} />
-                  </div>
-                )}
-
-                <div className="flex gap-4 justify-center pt-4">
-                  <Button
-                    onClick={onCorrect}
-                    size="lg"
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg"
-                  >
-                    <CheckCircle2 className="w-6 h-6 ml-2" />
-                    صحيح
-                  </Button>
-                  <Button
-                    onClick={onIncorrect}
-                    size="lg"
-                    variant="destructive"
-                    className="px-8 py-6 text-lg"
-                  >
-                    <XCircle className="w-6 h-6 ml-2" />
-                    خطأ
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>

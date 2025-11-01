@@ -139,7 +139,45 @@ export function parseQuestions(text: string): Question[] {
     const isCategory = line.endsWith(':') || line.endsWith('：') // Support both English and Arabic colon
     
     if (isCategory) {
-      // If we have a current question and answer, save it first
+      // Remove the colon and use as category name (freeform - any text before ":" becomes category)
+      const categoryName = line.replace(/[:：]$/, '').trim()
+      // Check if it matches a known category (for backwards compatibility)
+      const exactCategoryMatch = CATEGORIES.find(cat => cat === categoryName)
+      const partialCategoryMatch = CATEGORIES.find(cat => cat.includes(categoryName) || categoryName.includes(cat))
+      
+      // Use exact match if found, otherwise partial match, otherwise use the category name as-is (freeform)
+      const newCategory = exactCategoryMatch || partialCategoryMatch || categoryName
+      
+      // If this is the same category as current, save current question and ignore duplicate category line
+      // This prevents parsing when ChatGPT repeats categories before each question
+      // Categories should only appear once, then all questions for that category follow
+      if (currentCategory === newCategory && currentCategory) {
+        // Duplicate category line - save current question first, then ignore the category line
+        if (currentQuestion && (currentAnswer || currentAnswerLines.length > 0)) {
+          const finalAnswer = currentAnswerLines.length > 0 
+            ? currentAnswerLines.join('\n')
+            : currentAnswer
+          questions.push({
+            id: `${Date.now()}-${Math.random()}`,
+            category: currentCategory || 'معلومات عامة وممتعة',
+            question: currentQuestion,
+            answer: finalAnswer,
+            code: currentCode || undefined,
+            media: currentMedia,
+          })
+          // Reset for next question in same category
+          currentQuestion = ''
+          currentAnswer = ''
+          currentAnswerLines = []
+          currentCode = ''
+          collectingAnswer = false
+          currentMedia = undefined
+        }
+        // Ignore duplicate category line and continue
+        continue
+      }
+      
+      // If we have a current question and answer, save it first before switching to different category
       if (currentQuestion && (currentAnswer || currentAnswerLines.length > 0)) {
         const finalAnswer = currentAnswerLines.length > 0 
           ? currentAnswerLines.join('\n')
@@ -154,14 +192,8 @@ export function parseQuestions(text: string): Question[] {
         })
       }
       
-      // Remove the colon and use as category name (freeform - any text before ":" becomes category)
-      const categoryName = line.replace(/[:：]$/, '').trim()
-      // Check if it matches a known category (for backwards compatibility)
-      const exactCategoryMatch = CATEGORIES.find(cat => cat === categoryName)
-      const partialCategoryMatch = CATEGORIES.find(cat => cat.includes(categoryName) || categoryName.includes(cat))
-      
-      // Use exact match if found, otherwise partial match, otherwise use the category name as-is (freeform)
-      currentCategory = exactCategoryMatch || partialCategoryMatch || categoryName
+      // Set new category (different from current)
+      currentCategory = newCategory
       currentQuestion = ''
       currentAnswer = ''
       currentAnswerLines = []

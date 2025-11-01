@@ -4,7 +4,6 @@ import { useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGameState } from '@/hooks/useGameState'
 import { ModeratorScreen } from '@/components/ModeratorScreen'
-import { AnswerRevealScreen } from '@/components/AnswerRevealScreen'
 import { ResultsScreen } from '@/components/ResultsScreen'
 import type { GameState, Question } from '@/lib/types'
 import { storage } from '@/lib/storage'
@@ -90,23 +89,29 @@ export default function GamePage() {
     if (!gameState) return
 
     const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
+    
+    // Get the next question first
+    const question = getRandomQuestion(gameState.questions, gameState.usedQuestions)
+    if (!question) {
+      // No more questions, end game
+      updateGameState({ gamePhase: 'results' })
+      return
+    }
+
+    // Update state with next question immediately to avoid delay
     updateGameState({
       currentTeam: nextTeam,
-      currentQuestion: null,
-      currentQuestionIndex: null,
-      gamePhase: 'waiting',
+      currentQuestion: question,
+      currentQuestionIndex: gameState.usedQuestions.length,
+      usedQuestions: [...gameState.usedQuestions, question.id],
+      gamePhase: 'playing',
       timer: {
         timeLeft: 60,
         isPaused: false,
-        isRunning: false,
+        isRunning: true,
       },
     })
-
-    // Auto-start next question after a short delay
-    setTimeout(() => {
-      startQuestion()
-    }, 500)
-  }, [gameState, updateGameState, startQuestion])
+  }, [gameState, updateGameState])
 
   const handleTimerUp = useCallback(() => {
     if (!gameState) return
@@ -188,8 +193,8 @@ export default function GamePage() {
 
   useEffect(() => {
     if (!isLoading && gameState) {
-      // Auto-start first question if waiting
-      if (gameState.gamePhase === 'waiting' && !gameState.currentQuestion) {
+      // Auto-start first question if waiting (only on initial load)
+      if (gameState.gamePhase === 'waiting' && !gameState.currentQuestion && gameState.usedQuestions.length === 0) {
         startQuestion()
       }
     }
@@ -214,14 +219,7 @@ export default function GamePage() {
     )
   }
 
-  if (gameState.gamePhase === 'answerReveal' && gameState.currentQuestion) {
-    return (
-      <AnswerRevealScreen
-        question={gameState.currentQuestion}
-        onNext={handleNextQuestion}
-      />
-    )
-  }
+  const isAnswerRevealed = gameState.gamePhase === 'answerReveal'
 
   return (
     <ModeratorScreen
@@ -239,6 +237,8 @@ export default function GamePage() {
       onTimeUp={handleTimerUp}
       onTimerTick={handleTimerTick}
       onEndGame={handleEndGame}
+      onNextQuestion={handleNextQuestion}
+      isAnswerRevealed={isAnswerRevealed}
       viewMode="moderator"
     />
   )
