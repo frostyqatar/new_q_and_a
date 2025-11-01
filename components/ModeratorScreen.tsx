@@ -7,7 +7,7 @@ import { Timer } from '@/components/Timer'
 import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
 import type { Team, Question } from '@/lib/types'
-import { CheckCircle2, XCircle, Flag, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, XCircle, Flag, Eye } from 'lucide-react'
 
 interface ModeratorScreenProps {
   team1: Team
@@ -23,12 +23,12 @@ interface ModeratorScreenProps {
   }
   onCorrect: () => void
   onIncorrect: () => void
+  onRevealAnswer: () => void
   onPauseTimer: () => void
   onResumeTimer: () => void
   onTimeUp: () => void
   onTimerTick?: (timeLeft: number) => void
   onEndGame: () => void
-  onNextQuestion: () => void
   isAnswerRevealed: boolean
   viewMode: 'public' | 'moderator'
 }
@@ -43,12 +43,12 @@ export function ModeratorScreen({
   timer,
   onCorrect,
   onIncorrect,
+  onRevealAnswer,
   onPauseTimer,
   onResumeTimer,
   onTimeUp,
   onTimerTick,
   onEndGame,
-  onNextQuestion,
   isAnswerRevealed,
   viewMode,
 }: ModeratorScreenProps) {
@@ -198,20 +198,12 @@ export function ModeratorScreen({
 
                     <div className="flex gap-4 justify-center pt-4">
                       <Button
-                        onClick={onCorrect}
+                        onClick={onRevealAnswer}
                         size="lg"
-                        className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300"
+                        className="backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
                       >
-                        <CheckCircle2 className="w-6 h-6 ml-2" />
-                        صحيح
-                      </Button>
-                      <Button
-                        onClick={onIncorrect}
-                        size="lg"
-                        className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
-                      >
-                        <XCircle className="w-6 h-6 ml-2" />
-                        خطأ
+                        <Eye className="w-6 h-6 ml-2" />
+                        كشف
                       </Button>
                     </div>
                   </>
@@ -226,14 +218,22 @@ export function ModeratorScreen({
                       </div>
                     </div>
 
-                    <div className="flex justify-center pt-4">
+                    <div className="flex gap-4 justify-center pt-4">
                       <Button
-                        onClick={onNextQuestion}
+                        onClick={onCorrect}
                         size="lg"
-                        className="backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 px-8 py-6 text-lg text-white shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                        className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300"
                       >
-                        السؤال التالي
-                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        <CheckCircle2 className="w-6 h-6 ml-2" />
+                        صحيح
+                      </Button>
+                      <Button
+                        onClick={onIncorrect}
+                        size="lg"
+                        className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
+                      >
+                        <XCircle className="w-6 h-6 ml-2" />
+                        خطأ
                       </Button>
                     </div>
                   </>

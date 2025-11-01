@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useGameState } from '@/hooks/useGameState'
 import { ModeratorScreen } from '@/components/ModeratorScreen'
 import { ResultsScreen } from '@/components/ResultsScreen'
-import type { GameState, Question } from '@/lib/types'
+import type { Question } from '@/lib/types'
 import { storage } from '@/lib/storage'
 
 function getRandomQuestion(
@@ -55,51 +55,32 @@ export default function GamePage() {
     if (!gameState) return
 
     const currentTeam = gameState.currentTeam === 1 ? 'team1' : 'team2'
+    const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
+    
+    // Get the next question
+    const question = getRandomQuestion(gameState.questions, gameState.usedQuestions)
+    if (!question) {
+      // No more questions, end game
+      updateGameState({
+        [currentTeam]: {
+          ...gameState[currentTeam],
+          correct: gameState[currentTeam].correct + 1,
+        },
+        gamePhase: 'results',
+        timer: {
+          ...gameState.timer,
+          isRunning: false,
+        },
+      })
+      return
+    }
+
+    // Update state with score and next question
     updateGameState({
       [currentTeam]: {
         ...gameState[currentTeam],
         correct: gameState[currentTeam].correct + 1,
       },
-      gamePhase: 'answerReveal',
-      timer: {
-        ...gameState.timer,
-        isRunning: false,
-      },
-    })
-  }, [gameState, updateGameState])
-
-  const handleIncorrect = useCallback(() => {
-    if (!gameState) return
-
-    const currentTeam = gameState.currentTeam === 1 ? 'team1' : 'team2'
-    updateGameState({
-      [currentTeam]: {
-        ...gameState[currentTeam],
-        wrong: gameState[currentTeam].wrong + 1,
-      },
-      gamePhase: 'answerReveal',
-      timer: {
-        ...gameState.timer,
-        isRunning: false,
-      },
-    })
-  }, [gameState, updateGameState])
-
-  const handleNextQuestion = useCallback(() => {
-    if (!gameState) return
-
-    const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
-    
-    // Get the next question first
-    const question = getRandomQuestion(gameState.questions, gameState.usedQuestions)
-    if (!question) {
-      // No more questions, end game
-      updateGameState({ gamePhase: 'results' })
-      return
-    }
-
-    // Update state with next question immediately to avoid delay
-    updateGameState({
       currentTeam: nextTeam,
       currentQuestion: question,
       currentQuestionIndex: gameState.usedQuestions.length,
@@ -109,6 +90,60 @@ export default function GamePage() {
         timeLeft: 60,
         isPaused: false,
         isRunning: true,
+      },
+    })
+  }, [gameState, updateGameState])
+
+  const handleIncorrect = useCallback(() => {
+    if (!gameState) return
+
+    const currentTeam = gameState.currentTeam === 1 ? 'team1' : 'team2'
+    const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
+    
+    // Get the next question
+    const question = getRandomQuestion(gameState.questions, gameState.usedQuestions)
+    if (!question) {
+      // No more questions, end game
+      updateGameState({
+        [currentTeam]: {
+          ...gameState[currentTeam],
+          wrong: gameState[currentTeam].wrong + 1,
+        },
+        gamePhase: 'results',
+        timer: {
+          ...gameState.timer,
+          isRunning: false,
+        },
+      })
+      return
+    }
+
+    // Update state with score and next question
+    updateGameState({
+      [currentTeam]: {
+        ...gameState[currentTeam],
+        wrong: gameState[currentTeam].wrong + 1,
+      },
+      currentTeam: nextTeam,
+      currentQuestion: question,
+      currentQuestionIndex: gameState.usedQuestions.length,
+      usedQuestions: [...gameState.usedQuestions, question.id],
+      gamePhase: 'playing',
+      timer: {
+        timeLeft: 60,
+        isPaused: false,
+        isRunning: true,
+      },
+    })
+  }, [gameState, updateGameState])
+
+  const handleRevealAnswer = useCallback(() => {
+    if (!gameState) return
+    updateGameState({
+      gamePhase: 'answerReveal',
+      timer: {
+        ...gameState.timer,
+        isRunning: false,
       },
     })
   }, [gameState, updateGameState])
@@ -232,12 +267,12 @@ export default function GamePage() {
       timer={gameState.timer}
       onCorrect={handleCorrect}
       onIncorrect={handleIncorrect}
+      onRevealAnswer={handleRevealAnswer}
       onPauseTimer={handlePauseTimer}
       onResumeTimer={handleResumeTimer}
       onTimeUp={handleTimerUp}
       onTimerTick={handleTimerTick}
       onEndGame={handleEndGame}
-      onNextQuestion={handleNextQuestion}
       isAnswerRevealed={isAnswerRevealed}
       viewMode="moderator"
     />
