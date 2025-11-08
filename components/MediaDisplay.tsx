@@ -24,7 +24,7 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
             <img
               src={media.url}
               alt="Question media"
-              className="max-w-md w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-all duration-300 border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
+              className="max-w-md max-h-[500px] w-full h-auto object-contain rounded-lg cursor-pointer hover:opacity-90 transition-all duration-300 border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
               onClick={() => setImageModalOpen(true)}
               onError={(e) => {
                 const target = e.target as HTMLImageElement
@@ -50,7 +50,7 @@ export function MediaDisplay({ media, className }: MediaDisplayProps) {
           <video
             src={media.url}
             controls
-            className="max-w-md w-full h-auto rounded-lg border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
+            className="max-w-md max-h-[500px] w-full h-auto object-contain rounded-lg border-2 border-white/30 shadow-lg shadow-purple-500/10 backdrop-blur-sm bg-white/10"
             onError={(e) => {
               const target = e.target as HTMLVideoElement
               target.style.display = 'none'
