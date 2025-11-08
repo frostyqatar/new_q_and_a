@@ -11,6 +11,7 @@ export default function HomeScreen() {
   const router = useRouter()
   const [team1Name, setTeam1Name] = useState('')
   const [team2Name, setTeam2Name] = useState('')
+  const [gameMode, setGameMode] = useState<'normal' | 'bell'>('normal')
   const [canStart, setCanStart] = useState(false)
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function HomeScreen() {
       currentQuestionIndex: null,
       currentQuestion: null,
       gamePhase: 'waiting' as const,
+      gameMode: gameMode,
       timer: {
         timeLeft: 60,
         isPaused: false,
@@ -174,6 +176,32 @@ export default function HomeScreen() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="text-center mb-4">
+            <div className="flex gap-4 justify-center">
+              <button
+                type="button"
+                onClick={() => setGameMode('normal')}
+                className={`px-4 py-2 rounded-lg transition-all ${
+                  gameMode === 'normal'
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                موود عادي
+              </button>
+              <button
+                type="button"
+                onClick={() => setGameMode('bell')}
+                className={`px-4 py-2 rounded-lg transition-all ${
+                  gameMode === 'bell'
+                    ? 'bg-yellow-500 text-white shadow-lg'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                موود الجرس 🔔
+              </button>
+            </div>
+          </div>
           <div className="space-y-2">
             <label htmlFor="team1" className="text-xl font-bold text-gray-800">
               اسم الفريق الأول

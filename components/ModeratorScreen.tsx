@@ -7,7 +7,9 @@ import { Timer } from '@/components/Timer'
 import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
 import type { Team, Question } from '@/lib/types'
-import { CheckCircle2, XCircle, Flag, Eye } from 'lucide-react'
+import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { useMemo } from 'react'
 
 interface ModeratorScreenProps {
   team1: Team
@@ -31,6 +33,10 @@ interface ModeratorScreenProps {
   onEndGame: () => void
   isAnswerRevealed: boolean
   viewMode: 'public' | 'moderator'
+  gameMode: 'normal' | 'bell'
+  onSwitchTeam?: (team: 1 | 2) => void
+  onIncrementScore?: (team: 1 | 2) => void
+  onDecrementScore?: (team: 1 | 2) => void
 }
 
 export function ModeratorScreen({
@@ -51,7 +57,17 @@ export function ModeratorScreen({
   onEndGame,
   isAnswerRevealed,
   viewMode,
+  gameMode,
+  onSwitchTeam,
+  onIncrementScore,
+  onDecrementScore,
 }: ModeratorScreenProps) {
+  const bellUrl = useMemo(() => {
+    if (globalThis.window !== undefined) {
+      return `${globalThis.window.location.origin}/bell`
+    }
+    return '/bell'
+  }, [])
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
@@ -178,36 +194,7 @@ export function ModeratorScreen({
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {!isAnswerRevealed ? (
-                  <>
-                    <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800">
-                      {currentQuestion.question}
-                    </div>
-
-                    {currentQuestion.code && (
-                      <div className="mt-6 flex justify-center">
-                        <CodeDisplay code={currentQuestion.code} />
-                      </div>
-                    )}
-
-                    {currentQuestion.media && (
-                      <div className="mt-6">
-                        <MediaDisplay media={currentQuestion.media} />
-                      </div>
-                    )}
-
-                    <div className="flex gap-4 justify-center pt-4">
-                      <Button
-                        onClick={onRevealAnswer}
-                        size="lg"
-                        className="backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
-                      >
-                        <Eye className="w-6 h-6 ml-2" />
-                        كشف
-                      </Button>
-                    </div>
-                  </>
-                ) : (
+                {isAnswerRevealed ? (
                   <>
                     <div className="text-center space-y-4">
                       <div className="text-xl text-gray-700 mb-2 backdrop-blur-sm bg-white/20 rounded-lg px-4 py-2 inline-block">
@@ -237,6 +224,35 @@ export function ModeratorScreen({
                       </Button>
                     </div>
                   </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800">
+                      {currentQuestion.question}
+                    </div>
+
+                    {currentQuestion.code && (
+                      <div className="mt-6 flex justify-center">
+                        <CodeDisplay code={currentQuestion.code} />
+                      </div>
+                    )}
+
+                    {currentQuestion.media && (
+                      <div className="mt-6">
+                        <MediaDisplay media={currentQuestion.media} />
+                      </div>
+                    )}
+
+                    <div className="flex gap-4 justify-center pt-4">
+                      <Button
+                        onClick={onRevealAnswer}
+                        size="lg"
+                        className="backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                      >
+                        <Eye className="w-6 h-6 ml-2" />
+                        كشف
+                      </Button>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -251,25 +267,105 @@ export function ModeratorScreen({
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className={currentTeam === 1 
-                    ? "ring-2 ring-blue-400/60 rounded-lg p-3 backdrop-blur-sm bg-blue-50/40 border border-blue-200/50 shadow-lg shadow-blue-500/10" 
-                    : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
-                  }>
+                  <div 
+                    className={currentTeam === 1 
+                      ? "ring-2 ring-blue-400/60 rounded-lg p-3 backdrop-blur-sm bg-blue-50/40 border border-blue-200/50 shadow-lg shadow-blue-500/10" 
+                      : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
+                    }
+                    onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(1) : undefined}
+                    onKeyDown={gameMode === 'bell' && onSwitchTeam ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSwitchTeam(1)
+                      }
+                    } : undefined}
+                    role={gameMode === 'bell' && onSwitchTeam ? 'button' : undefined}
+                    tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
+                    style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
+                  >
                     <div className="font-bold text-lg mb-2 text-gray-800">{team1.name}</div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-2">
                       <span className="text-green-700 font-semibold">صحيح:</span>
-                      <span className="text-2xl font-bold text-gray-800">{team1.correct}</span>
+                      <div className="flex items-center gap-2">
+                        {onDecrementScore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDecrementScore(1)
+                            }}
+                            className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <span className="text-2xl font-bold text-gray-800">{team1.correct}</span>
+                        {onIncrementScore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onIncrementScore(1)
+                            }}
+                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className={currentTeam === 2 
-                    ? "ring-2 ring-purple-400/60 rounded-lg p-3 backdrop-blur-sm bg-purple-50/40 border border-purple-200/50 shadow-lg shadow-purple-500/10" 
-                    : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
-                  }>
+                  <div 
+                    className={currentTeam === 2 
+                      ? "ring-2 ring-purple-400/60 rounded-lg p-3 backdrop-blur-sm bg-purple-50/40 border border-purple-200/50 shadow-lg shadow-purple-500/10" 
+                      : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
+                    }
+                    onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(2) : undefined}
+                    onKeyDown={gameMode === 'bell' && onSwitchTeam ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onSwitchTeam(2)
+                      }
+                    } : undefined}
+                    role={gameMode === 'bell' && onSwitchTeam ? 'button' : undefined}
+                    tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
+                    style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
+                  >
                     <div className="font-bold text-lg mb-2 text-gray-800">{team2.name}</div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-2">
                       <span className="text-green-700 font-semibold">صحيح:</span>
-                      <span className="text-2xl font-bold text-gray-800">{team2.correct}</span>
+                      <div className="flex items-center gap-2">
+                        {onDecrementScore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDecrementScore(2)
+                            }}
+                            className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <span className="text-2xl font-bold text-gray-800">{team2.correct}</span>
+                        {onIncrementScore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onIncrementScore(2)
+                            }}
+                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -304,6 +400,16 @@ export function ModeratorScreen({
               <Flag className="w-5 h-5 ml-2" />
               إنهاء اللعبة
             </Button>
+
+            {/* QR Code for Bell Mode */}
+            {gameMode === 'bell' && !isAnswerRevealed && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="text-xl font-bold text-gray-800">افتح الجرس 🔔</div>
+                <div className="backdrop-blur-md bg-white/40 border border-white/50 rounded-lg p-4 shadow-lg">
+                  <QRCodeSVG value={bellUrl} size={150} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

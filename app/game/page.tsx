@@ -226,6 +226,35 @@ export default function GamePage() {
     router.push('/')
   }, [router])
 
+  const handleSwitchTeam = useCallback((team: 1 | 2) => {
+    if (!gameState) return
+    updateGameState({
+      currentTeam: team,
+    })
+  }, [gameState, updateGameState])
+
+  const handleIncrementScore = useCallback((team: 1 | 2) => {
+    if (!gameState) return
+    const teamKey = team === 1 ? 'team1' : 'team2'
+    updateGameState({
+      [teamKey]: {
+        ...gameState[teamKey],
+        correct: gameState[teamKey].correct + 1,
+      },
+    })
+  }, [gameState, updateGameState])
+
+  const handleDecrementScore = useCallback((team: 1 | 2) => {
+    if (!gameState) return
+    const teamKey = team === 1 ? 'team1' : 'team2'
+    updateGameState({
+      [teamKey]: {
+        ...gameState[teamKey],
+        correct: Math.max(0, gameState[teamKey].correct - 1),
+      },
+    })
+  }, [gameState, updateGameState])
+
   useEffect(() => {
     if (!isLoading && gameState) {
       // Auto-start first question if waiting (only on initial load)
@@ -250,6 +279,8 @@ export default function GamePage() {
         team2={gameState.team2}
         onPlayAgain={handlePlayAgain}
         onNewGame={handleNewGame}
+        onIncrementScore={handleIncrementScore}
+        onDecrementScore={handleDecrementScore}
       />
     )
   }
@@ -275,6 +306,10 @@ export default function GamePage() {
       onEndGame={handleEndGame}
       isAnswerRevealed={isAnswerRevealed}
       viewMode="moderator"
+      gameMode={gameState.gameMode || 'normal'}
+      onSwitchTeam={handleSwitchTeam}
+      onIncrementScore={handleIncrementScore}
+      onDecrementScore={handleDecrementScore}
     />
   )
 }

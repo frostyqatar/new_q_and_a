@@ -25,6 +25,7 @@ export interface GameState {
   currentQuestionIndex: number | null
   currentQuestion: Question | null
   gamePhase: 'waiting' | 'playing' | 'answerReveal' | 'results'
+  gameMode: 'normal' | 'bell'
   timer: {
     timeLeft: number
     isPaused: boolean

@@ -2,8 +2,10 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { Team } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { Plus, Minus } from 'lucide-react'
 
 interface PublicDisplayScreenProps {
   team1: Team
@@ -12,6 +14,8 @@ interface PublicDisplayScreenProps {
   currentQuestionIndex: number | null
   totalQuestions: number
   viewMode: 'public' | 'moderator'
+  onIncrementScore?: (team: 1 | 2) => void
+  onDecrementScore?: (team: 1 | 2) => void
 }
 
 export function PublicDisplayScreen({
@@ -21,6 +25,8 @@ export function PublicDisplayScreen({
   currentQuestionIndex,
   totalQuestions,
   viewMode,
+  onIncrementScore,
+  onDecrementScore,
 }: PublicDisplayScreenProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
@@ -40,8 +46,30 @@ export function PublicDisplayScreen({
                   {team1.name}
                 </h2>
                 <div className="space-y-2">
-                  <div className="text-5xl font-bold text-green-600">
-                    {team1.correct}
+                  <div className="flex items-center justify-center gap-3">
+                    {onDecrementScore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDecrementScore(1)}
+                        className="h-10 w-10 p-0 rounded-full hover:bg-red-100"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </Button>
+                    )}
+                    <div className="text-5xl font-bold text-green-600">
+                      {team1.correct}
+                    </div>
+                    {onIncrementScore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onIncrementScore(1)}
+                        className="h-10 w-10 p-0 rounded-full hover:bg-green-100"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     إجابات صحيحة
@@ -69,8 +97,30 @@ export function PublicDisplayScreen({
                   {team2.name}
                 </h2>
                 <div className="space-y-2">
-                  <div className="text-5xl font-bold text-green-600">
-                    {team2.correct}
+                  <div className="flex items-center justify-center gap-3">
+                    {onDecrementScore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDecrementScore(2)}
+                        className="h-10 w-10 p-0 rounded-full hover:bg-red-100"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </Button>
+                    )}
+                    <div className="text-5xl font-bold text-green-600">
+                      {team2.correct}
+                    </div>
+                    {onIncrementScore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onIncrementScore(2)}
+                        className="h-10 w-10 p-0 rounded-full hover:bg-green-100"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </Button>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     إجابات صحيحة

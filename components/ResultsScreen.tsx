@@ -11,6 +11,8 @@ interface ResultsScreenProps {
   team2: Team
   onPlayAgain: () => void
   onNewGame: () => void
+  onIncrementScore?: (team: 1 | 2) => void
+  onDecrementScore?: (team: 1 | 2) => void
 }
 
 export function ResultsScreen({
@@ -18,6 +20,8 @@ export function ResultsScreen({
   team2,
   onPlayAgain,
   onNewGame,
+  onIncrementScore,
+  onDecrementScore,
 }: ResultsScreenProps) {
   const team1Total = team1.correct
   const team2Total = team2.correct
