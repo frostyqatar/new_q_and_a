@@ -70,10 +70,16 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "ring": {
+          "0%, 100%": { transform: "rotate(0deg) scale(1)" },
+          "10%, 30%, 50%, 70%, 90%": { transform: "rotate(-8deg) scale(1.05)" },
+          "20%, 40%, 60%, 80%": { transform: "rotate(8deg) scale(1.05)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ring": "ring 0.6s ease-in-out",
       },
     },
   },
