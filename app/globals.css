@@ -92,3 +92,184 @@
   }
 }
 
+/* Shiny Team Card Styles */
+@font-face {
+  font-family: "Mona Sans";
+  src: url("https://assets.codepen.io/64/Mona-Sans.woff2") format("woff2 supports variations"),
+       url("https://assets.codepen.io/64/Mona-Sans.woff2") format("woff2-variations");
+  font-weight: 100 1000;
+}
+
+@property --shiny-bg-position {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 100;
+}
+
+@property --shiny-after-blur {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --shiny-after-opacity {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --shiny-before-opacity {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.3;
+}
+
+@property --shiny-btn-offset {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --shiny-btn-scale {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+.shiny-team-card {
+  --shiny-btn-bg: rgba(255, 255, 255, 0.5);
+  --shiny-btn-border-width: 1.5;
+  --shiny-btn-offset: 1;
+  --shiny-btn-scale: 1;
+  --shiny-after-bg: linear-gradient(
+    to right,
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0),
+    rgb(0 0 0)
+  );
+  --shiny-after-blur: 10;
+  --shiny-after-opacity: 1;
+  --shiny-after-pos-y: 10;
+  --shiny-before-opacity: 0.3;
+  --shiny-bg-position: 100;
+
+  --shiny-color-white: hsl(0, 0%, 100%);
+  --shiny-color-cyan: hsl(210, 100%, 90%);
+  --shiny-color-blue: hsl(210, 100%, 80%);
+  --shiny-color-purple: hsl(270, 50%, 80%);
+  --shiny-color-pink: hsl(330, 30%, 80%);
+  --shiny-color-red: hsl(0, 50%, 90%);
+  --shiny-color-yellow: hsl(45, 100%, 80%);
+  --shiny-color-lime: hsl(90, 50%, 90%);
+
+  /* Layout */
+  display: block;
+  width: 100%;
+  position: relative;
+  transform: scale(var(--shiny-btn-scale));
+  transition: 
+      --shiny-bg-position 3s ease, 
+      --shiny-after-blur 0.3s ease, 
+      --shiny-before-opacity 0.3s ease, 
+      --shiny-btn-offset 0.3s ease, 
+      --shiny-btn-scale 0.2s cubic-bezier(.76,-0.25,.51,1.13);
+  font-family: "Mona Sans", sans-serif;
+  cursor: pointer;
+}
+
+.shiny-team-card-content {
+  display: block;
+  padding: 0.8em 1.2em;
+  background: var(--shiny-btn-bg);
+  color: #333;
+  font-weight: bold;
+  border-radius: 8px;
+  font-size: 22px;
+  position: relative;
+  transition: --shiny-after-blur 0.3s ease;
+  z-index: 1;
+}
+
+.shiny-team-card-content:after {
+  display: block;
+  position: absolute;
+  content: "";
+  width: 100%;
+  height: 100%;
+  background: var(--shiny-after-bg) no-repeat calc(var(--shiny-bg-position) * 1%) 0% / 900%;
+  transform: translateY(calc(var(--shiny-after-pos-y) * 1px));
+  left: 0;
+  top: 0;
+  z-index: -2;
+  filter: blur(calc(var(--shiny-after-blur) * 1px));
+  opacity: var(--shiny-after-opacity);
+  border-radius: 8px;
+}
+
+.shiny-team-card-content:before {
+  content: "";
+  display: block;
+  position: absolute;
+  width: calc(100% + calc(calc(var(--shiny-btn-border-width) * 2) * 1px));
+  height: calc(100% + calc(calc(var(--shiny-btn-border-width) * 2) * 1px));
+  background: linear-gradient(
+      to right,
+      var(--shiny-color-white),
+      var(--shiny-color-white),
+      var(--shiny-color-cyan),
+      var(--shiny-color-blue),
+      var(--shiny-color-purple),
+      var(--shiny-color-pink),
+      var(--shiny-color-red),
+      var(--shiny-color-yellow),
+      var(--shiny-color-lime),
+      var(--shiny-color-white),
+      var(--shiny-color-white)
+    )
+    no-repeat calc(var(--shiny-bg-position) * 1%) 0% / 900%;
+  border-radius: 9px;
+  z-index: -1;
+  top: calc(var(--shiny-btn-border-width) * -1px);
+  left: calc(var(--shiny-btn-border-width) * -1px);
+  opacity: var(--shiny-before-opacity);
+}
+
+.shiny-team-card.active,
+.shiny-team-card:hover {
+  --shiny-btn-scale: 1.05;
+  --shiny-bg-position: 0;
+  --shiny-after-bg: linear-gradient(
+      to right,
+      var(--shiny-color-white),
+      var(--shiny-color-white),
+      var(--shiny-color-cyan),
+      var(--shiny-color-blue),
+      var(--shiny-color-purple),
+      var(--shiny-color-pink),
+      var(--shiny-color-red),
+      var(--shiny-color-yellow),
+      var(--shiny-color-lime),
+      var(--shiny-color-white),
+      var(--shiny-color-white)
+    );
+  --shiny-after-blur: 30;
+  --shiny-after-opacity: 0.3;
+  --shiny-after-pos-y: 0;
+  --shiny-before-opacity: 1;      
+  --shiny-btn-offset: 5;
+}
+
+.shiny-team-card:active {
+  --shiny-btn-scale: 0.98;
+  --shiny-after-blur: 15;
+}

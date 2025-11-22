@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGameState } from '@/hooks/useGameState'
 import { ModeratorScreen } from '@/components/ModeratorScreen'
@@ -21,12 +21,51 @@ function getRandomQuestion(
 export default function GamePage() {
   const router = useRouter()
   const { gameState, isLoading, updateGameState } = useGameState()
+  const teamSelectionAudioRef = useRef<HTMLAudioElement | null>(null)
+  const revealAudioRef = useRef<HTMLAudioElement | null>(null)
+  const correctAudioRef = useRef<HTMLAudioElement | null>(null)
+  const wrongAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (!isLoading && !gameState) {
       router.push('/')
     }
   }, [isLoading, gameState, router])
+
+  useEffect(() => {
+    // Initialize all audio elements
+    teamSelectionAudioRef.current = new Audio('/notification-for-game-scenes-132473.mp3')
+    teamSelectionAudioRef.current.preload = 'auto'
+
+    revealAudioRef.current = new Audio('/shine-11-268907.mp3')
+    revealAudioRef.current.preload = 'auto'
+
+    correctAudioRef.current = new Audio('/correct-choice-43861.mp3')
+    correctAudioRef.current.preload = 'auto'
+
+    wrongAudioRef.current = new Audio('/wrong-answer-126515.mp3')
+    wrongAudioRef.current.preload = 'auto'
+    wrongAudioRef.current.volume = 0.1 // Reduce volume by 30%
+
+    return () => {
+      if (teamSelectionAudioRef.current) {
+        teamSelectionAudioRef.current.pause()
+        teamSelectionAudioRef.current = null
+      }
+      if (revealAudioRef.current) {
+        revealAudioRef.current.pause()
+        revealAudioRef.current = null
+      }
+      if (correctAudioRef.current) {
+        correctAudioRef.current.pause()
+        correctAudioRef.current = null
+      }
+      if (wrongAudioRef.current) {
+        wrongAudioRef.current.pause()
+        wrongAudioRef.current = null
+      }
+    }
+  }, [])
 
   const startQuestion = useCallback(() => {
     if (!gameState) return
@@ -54,6 +93,14 @@ export default function GamePage() {
   const handleCorrect = useCallback(() => {
     if (!gameState) return
 
+    // Play correct sound
+    if (correctAudioRef.current) {
+      correctAudioRef.current.currentTime = 0
+      correctAudioRef.current.play().catch((error) => {
+        console.error('Error playing correct sound:', error)
+      })
+    }
+
     const currentTeam = gameState.currentTeam === 1 ? 'team1' : 'team2'
     const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
     
@@ -75,13 +122,16 @@ export default function GamePage() {
       return
     }
 
+    // In bell mode, don't switch teams automatically
+    const shouldSwitchTeam = gameState.gameMode !== 'bell'
+
     // Update state with score and next question
     updateGameState({
       [currentTeam]: {
         ...gameState[currentTeam],
         correct: gameState[currentTeam].correct + 1,
       },
-      currentTeam: nextTeam,
+      currentTeam: shouldSwitchTeam ? nextTeam : gameState.currentTeam,
       currentQuestion: question,
       currentQuestionIndex: gameState.usedQuestions.length,
       usedQuestions: [...gameState.usedQuestions, question.id],
@@ -97,48 +147,105 @@ export default function GamePage() {
   const handleIncorrect = useCallback(() => {
     if (!gameState) return
 
+    // Play wrong answer sound
+    if (wrongAudioRef.current) {
+      wrongAudioRef.current.currentTime = 0
+      wrongAudioRef.current.play().catch((error) => {
+        console.error('Error playing wrong answer sound:', error)
+      })
+    }
+
     const currentTeam = gameState.currentTeam === 1 ? 'team1' : 'team2'
     const nextTeam: 1 | 2 = gameState.currentTeam === 1 ? 2 : 1
     
     // Get the next question
     const question = getRandomQuestion(gameState.questions, gameState.usedQuestions)
+    
+    // In bell mode, subtract 1 from correct score. In normal mode, add to wrong count
+    const isBellMode = gameState.gameMode === 'bell'
+    
     if (!question) {
       // No more questions, end game
+      if (isBellMode) {
+        updateGameState({
+          [currentTeam]: {
+            ...gameState[currentTeam],
+            correct: Math.max(0, gameState[currentTeam].correct - 1),
+          },
+          gamePhase: 'results',
+          timer: {
+            ...gameState.timer,
+            isRunning: false,
+          },
+        })
+      } else {
+        updateGameState({
+          [currentTeam]: {
+            ...gameState[currentTeam],
+            wrong: gameState[currentTeam].wrong + 1,
+          },
+          gamePhase: 'results',
+          timer: {
+            ...gameState.timer,
+            isRunning: false,
+          },
+        })
+      }
+      return
+    }
+
+    // In bell mode, don't switch teams automatically
+    const shouldSwitchTeam = !isBellMode
+
+    // Update state with score and next question
+    if (isBellMode) {
+      updateGameState({
+        [currentTeam]: {
+          ...gameState[currentTeam],
+          correct: Math.max(0, gameState[currentTeam].correct - 1),
+        },
+        currentTeam: gameState.currentTeam, // Don't switch in bell mode
+        currentQuestion: question,
+        currentQuestionIndex: gameState.usedQuestions.length,
+        usedQuestions: [...gameState.usedQuestions, question.id],
+        gamePhase: 'playing',
+        timer: {
+          timeLeft: 60,
+          isPaused: false,
+          isRunning: true,
+        },
+      })
+    } else {
       updateGameState({
         [currentTeam]: {
           ...gameState[currentTeam],
           wrong: gameState[currentTeam].wrong + 1,
         },
-        gamePhase: 'results',
+        currentTeam: nextTeam,
+        currentQuestion: question,
+        currentQuestionIndex: gameState.usedQuestions.length,
+        usedQuestions: [...gameState.usedQuestions, question.id],
+        gamePhase: 'playing',
         timer: {
-          ...gameState.timer,
-          isRunning: false,
+          timeLeft: 60,
+          isPaused: false,
+          isRunning: true,
         },
       })
-      return
     }
-
-    // Update state with score and next question
-    updateGameState({
-      [currentTeam]: {
-        ...gameState[currentTeam],
-        wrong: gameState[currentTeam].wrong + 1,
-      },
-      currentTeam: nextTeam,
-      currentQuestion: question,
-      currentQuestionIndex: gameState.usedQuestions.length,
-      usedQuestions: [...gameState.usedQuestions, question.id],
-      gamePhase: 'playing',
-      timer: {
-        timeLeft: 60,
-        isPaused: false,
-        isRunning: true,
-      },
-    })
   }, [gameState, updateGameState])
 
   const handleRevealAnswer = useCallback(() => {
     if (!gameState) return
+    
+    // Play reveal sound
+    if (revealAudioRef.current) {
+      revealAudioRef.current.currentTime = 0
+      revealAudioRef.current.play().catch((error) => {
+        console.error('Error playing reveal sound:', error)
+      })
+    }
+    
     updateGameState({
       gamePhase: 'answerReveal',
       timer: {
@@ -228,6 +335,15 @@ export default function GamePage() {
 
   const handleSwitchTeam = useCallback((team: 1 | 2) => {
     if (!gameState) return
+    
+    // Play notification sound when team is selected
+    if (teamSelectionAudioRef.current) {
+      teamSelectionAudioRef.current.currentTime = 0
+      teamSelectionAudioRef.current.play().catch((error) => {
+        console.error('Error playing team selection sound:', error)
+      })
+    }
+    
     updateGameState({
       currentTeam: team,
     })

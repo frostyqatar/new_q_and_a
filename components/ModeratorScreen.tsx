@@ -269,7 +269,7 @@ export function ModeratorScreen({
                 <div className="space-y-4">
                   <div 
                     className={currentTeam === 1 
-                      ? "ring-2 ring-blue-400/60 rounded-lg p-3 backdrop-blur-sm bg-blue-50/40 border border-blue-200/50 shadow-lg shadow-blue-500/10" 
+                      ? "shiny-team-card active ring-2 ring-blue-400/60 rounded-lg" 
                       : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
                     }
                     onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(1) : undefined}
@@ -283,44 +283,84 @@ export function ModeratorScreen({
                     tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
                     style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
                   >
-                    <div className="font-bold text-lg mb-2 text-gray-800">{team1.name}</div>
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="text-green-700 font-semibold">صحيح:</span>
-                      <div className="flex items-center gap-2">
-                        {onDecrementScore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onDecrementScore(1)
-                            }}
-                            className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <span className="text-2xl font-bold text-gray-800">{team1.correct}</span>
-                        {onIncrementScore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onIncrementScore(1)
-                            }}
-                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        )}
+                    {currentTeam === 1 ? (
+                      <div className="shiny-team-card-content">
+                        <div className="font-bold text-lg mb-2">{team1.name}</div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-green-700 font-semibold">صحيح:</span>
+                          <div className="flex items-center gap-2">
+                            {onDecrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDecrementScore(1)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <span className="text-2xl font-bold">{team1.correct}</span>
+                            {onIncrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onIncrementScore(1)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="font-bold text-lg mb-2 text-gray-800">{team1.name}</div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-green-700 font-semibold">صحيح:</span>
+                          <div className="flex items-center gap-2">
+                            {onDecrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDecrementScore(1)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <span className="text-2xl font-bold text-gray-800">{team1.correct}</span>
+                            {onIncrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onIncrementScore(1)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div 
                     className={currentTeam === 2 
-                      ? "ring-2 ring-purple-400/60 rounded-lg p-3 backdrop-blur-sm bg-purple-50/40 border border-purple-200/50 shadow-lg shadow-purple-500/10" 
+                      ? "shiny-team-card active ring-2 ring-purple-400/60 rounded-lg" 
                       : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
                     }
                     onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(2) : undefined}
@@ -334,39 +374,79 @@ export function ModeratorScreen({
                     tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
                     style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
                   >
-                    <div className="font-bold text-lg mb-2 text-gray-800">{team2.name}</div>
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="text-green-700 font-semibold">صحيح:</span>
-                      <div className="flex items-center gap-2">
-                        {onDecrementScore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onDecrementScore(2)
-                            }}
-                            className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <span className="text-2xl font-bold text-gray-800">{team2.correct}</span>
-                        {onIncrementScore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onIncrementScore(2)
-                            }}
-                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        )}
+                    {currentTeam === 2 ? (
+                      <div className="shiny-team-card-content">
+                        <div className="font-bold text-lg mb-2">{team2.name}</div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-green-700 font-semibold">صحيح:</span>
+                          <div className="flex items-center gap-2">
+                            {onDecrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDecrementScore(2)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <span className="text-2xl font-bold">{team2.correct}</span>
+                            {onIncrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onIncrementScore(2)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="font-bold text-lg mb-2 text-gray-800">{team2.name}</div>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-green-700 font-semibold">صحيح:</span>
+                          <div className="flex items-center gap-2">
+                            {onDecrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDecrementScore(2)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-red-100"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <span className="text-2xl font-bold text-gray-800">{team2.correct}</span>
+                            {onIncrementScore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onIncrementScore(2)
+                                }}
+                                className="h-8 w-8 p-0 rounded-full hover:bg-green-100"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
