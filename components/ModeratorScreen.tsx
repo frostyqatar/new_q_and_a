@@ -269,19 +269,14 @@ export function ModeratorScreen({
                 <div className="space-y-4">
                   <div 
                     className={currentTeam === 1 
-                      ? "shiny-team-card active ring-2 ring-blue-400/60 rounded-lg" 
+                      ? "shiny-team-card active rounded-lg" 
                       : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
                     }
                     onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(1) : undefined}
-                    onKeyDown={gameMode === 'bell' && onSwitchTeam ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onSwitchTeam(1)
-                      }
-                    } : undefined}
-                    role={gameMode === 'bell' && onSwitchTeam ? 'button' : undefined}
-                    tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
-                    style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
+                    style={{
+                      ...(gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}),
+                      '--snake-color': '#60a5fa'
+                    } as React.CSSProperties}
                   >
                     {currentTeam === 1 ? (
                       <div className="shiny-team-card-content">
@@ -360,19 +355,14 @@ export function ModeratorScreen({
 
                   <div 
                     className={currentTeam === 2 
-                      ? "shiny-team-card active ring-2 ring-purple-400/60 rounded-lg" 
+                      ? "shiny-team-card active rounded-lg" 
                       : "p-3 backdrop-blur-sm bg-white/20 rounded-lg border border-white/30"
                     }
                     onClick={gameMode === 'bell' && onSwitchTeam ? () => onSwitchTeam(2) : undefined}
-                    onKeyDown={gameMode === 'bell' && onSwitchTeam ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onSwitchTeam(2)
-                      }
-                    } : undefined}
-                    role={gameMode === 'bell' && onSwitchTeam ? 'button' : undefined}
-                    tabIndex={gameMode === 'bell' && onSwitchTeam ? 0 : undefined}
-                    style={gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}}
+                    style={{
+                      ...(gameMode === 'bell' && onSwitchTeam ? { cursor: 'pointer' } : {}),
+                      '--snake-color': '#c084fc'
+                    } as React.CSSProperties}
                   >
                     {currentTeam === 2 ? (
                       <div className="shiny-team-card-content">

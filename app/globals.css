@@ -136,6 +136,19 @@
   initial-value: 1;
 }
 
+/* Snake Border Animation Props */
+@property --snake-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes snake-rotate {
+  to {
+    --snake-angle: 360deg;
+  }
+}
+
 .shiny-team-card {
   --shiny-btn-bg: rgba(255, 255, 255, 0.5);
   --shiny-btn-border-width: 1.5;
@@ -244,6 +257,24 @@
   opacity: var(--shiny-before-opacity);
 }
 
+.shiny-team-card.active .shiny-team-card-content::before {
+  background: conic-gradient(
+    from var(--snake-angle),
+    transparent 20%,
+    var(--snake-color, #60a5fa) 100%
+  );
+  animation: snake-rotate 8s linear infinite;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  filter: blur(2px);
+}
+
+.shiny-team-card.active .shiny-team-card-content {
+  border: 1px solid var(--snake-color, #60a5fa);
+}
+
 .shiny-team-card.active,
 .shiny-team-card:hover {
   --shiny-btn-scale: 1.05;
@@ -272,4 +303,31 @@
 .shiny-team-card:active {
   --shiny-btn-scale: 0.98;
   --shiny-after-blur: 15;
+}
+
+/* Trophy Animation */
+@keyframes draw-trophy {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes trophy-glow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.5)); }
+  50% { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)); }
+}
+
+@keyframes trophy-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.trophy-svg path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw-trophy 2s ease-out forwards;
+}
+
+.trophy-container {
+  animation: trophy-float 3s ease-in-out infinite, trophy-glow 3s infinite;
 }

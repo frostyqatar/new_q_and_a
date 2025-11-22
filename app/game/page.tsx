@@ -36,6 +36,7 @@ export default function GamePage() {
     // Initialize all audio elements
     teamSelectionAudioRef.current = new Audio('/notification-for-game-scenes-132473.mp3')
     teamSelectionAudioRef.current.preload = 'auto'
+    teamSelectionAudioRef.current.volume = 0.1 // Set volume to 10%
 
     revealAudioRef.current = new Audio('/shine-11-268907.mp3')
     revealAudioRef.current.preload = 'auto'
