@@ -235,8 +235,36 @@ export default function AdminPage() {
                   <div>
                     ضع رابط الصورة/الفيديو/الصوت/اليوتيوب بعد الجواب في سطر منفصل.
                   </div>
-                  <div className="text-xs text-muted-foreground mt-2">
-                    المدعومة: روابط الصور (.jpg, .png, .gif), الفيديو (.mp4), الصوت (.mp3), وروابط YouTube.
+                  <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                    <div><strong>الصور:</strong> .jpg, .png, .gif, .webp, .svg</div>
+                    <div><strong>الفيديو:</strong> .mp4, .webm, .ogg</div>
+                    <div><strong>الصوت:</strong> .mp3, .wav, .ogg, .m4a</div>
+                    <div><strong>YouTube:</strong> أي رابط youtube.com/watch أو youtu.be/</div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t text-xs">
+                    <strong>أمثلة:</strong>
+                    <div className="mt-1 font-mono text-xs bg-muted p-2 rounded">
+                      <div className="mb-1">مثال مع صورة:</div>
+                      <div>حقائق الحيوانات:</div>
+                      <div>ما اسم هذا الحيوان؟</div>
+                      <div>الأسد</div>
+                      <div>https://example.com/lion.jpg</div>
+                      <div className="mt-2 mb-1">مثال مع فيديو:</div>
+                      <div>التاريخ:</div>
+                      <div>ما هي عاصمة فرنسا؟</div>
+                      <div>باريس</div>
+                      <div>https://example.com/paris.mp4</div>
+                      <div className="mt-2 mb-1">مثال مع صوت:</div>
+                      <div>الموسيقى:</div>
+                      <div>ما اسم هذه الأغنية؟</div>
+                      <div>أغنية جميلة</div>
+                      <div>https://example.com/song.mp3</div>
+                      <div className="mt-2 mb-1">مثال مع YouTube:</div>
+                      <div>العلوم:</div>
+                      <div>ما هو هذا الكوكب؟</div>
+                      <div>المريخ</div>
+                      <div>https://youtube.com/watch?v=abc123</div>
+                    </div>
                   </div>
                 </div>
               </CardDescription>
@@ -259,7 +287,25 @@ Au
 حقائق الحيوانات:
 ما اسم هذا الحيوان؟
 الأسد
-https://example.com/lion.jpg`}
+https://example.com/lion.jpg
+
+مثال مع فيديو:
+التاريخ:
+ما هي عاصمة فرنسا؟
+باريس
+https://example.com/paris.mp4
+
+مثال مع صوت:
+الموسيقى:
+ما اسم هذه الأغنية؟
+أغنية جميلة
+https://example.com/song.mp3
+
+مثال مع YouTube:
+العلوم:
+ما هو هذا الكوكب؟
+المريخ
+https://youtube.com/watch?v=abc123`}
                 className="min-h-[300px] font-mono text-sm"
               />
               <div className="flex gap-2">
