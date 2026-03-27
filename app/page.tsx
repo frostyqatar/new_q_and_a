@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { storage } from '@/lib/storage'
+import { validateDifficultyBalance } from '@/lib/difficultyValidation'
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -13,6 +14,9 @@ export default function HomeScreen() {
   const [team2Name, setTeam2Name] = useState('')
   const [gameMode, setGameMode] = useState<'normal' | 'bell'>('normal')
   const [canStart, setCanStart] = useState(false)
+  const [questionsBalanced, setQuestionsBalanced] = useState(true)
+  const [hasQuestions, setHasQuestions] = useState(true)
+  const [balanceError, setBalanceError] = useState('')
 
   useEffect(() => {
     // Check if there's a saved game state
@@ -20,12 +24,33 @@ export default function HomeScreen() {
     if (savedState && savedState.gamePhase !== 'waiting') {
       // Resume game
       router.push('/game')
+      return
+    }
+    // Check question balance
+    const questions = storage.getQuestions()
+    setHasQuestions(questions.length > 0)
+    if (questions.length === 0) {
+      setQuestionsBalanced(false)
+      setBalanceError('لا توجد أسئلة. اذهب لإدارة الأسئلة لإضافة أسئلة.')
+      return
+    }
+    const validation = validateDifficultyBalance(questions)
+    setQuestionsBalanced(validation.isBalanced)
+    if (!validation.isBalanced) {
+      const issues: string[] = []
+      if (!validation.isEvenTotal) {
+        issues.push(`إجمالي الأسئلة (${validation.totalQuestions}) عدد فردي`)
+      }
+      if (validation.unbalancedLevels.length > 0) {
+        issues.push(`صعوبة ${validation.unbalancedLevels.join('، ')} عدد فردي`)
+      }
+      setBalanceError(issues.join(' | '))
     }
   }, [router])
 
   useEffect(() => {
-    setCanStart(team1Name.trim().length > 0 && team2Name.trim().length > 0)
-  }, [team1Name, team2Name])
+    setCanStart(team1Name.trim().length > 0 && team2Name.trim().length > 0 && questionsBalanced)
+  }, [team1Name, team2Name, questionsBalanced])
 
   const handleStart = () => {
     if (!canStart) return
@@ -234,6 +259,13 @@ export default function HomeScreen() {
               }}
             />
           </div>
+          {!questionsBalanced && (
+            <div className="text-sm text-red-700 bg-red-100/80 border border-red-300 rounded-lg px-3 py-2 text-center">
+              {balanceError}
+              <br />
+              <span className="text-xs">عدّل الأسئلة من "إدارة الأسئلة" لتصبح متوازنة.</span>
+            </div>
+          )}
           <Button
             onClick={handleStart}
             disabled={!canStart}
