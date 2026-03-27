@@ -7,7 +7,7 @@ import { Timer } from '@/components/Timer'
 import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
 import type { Team, Question } from '@/lib/types'
-import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus } from 'lucide-react'
+import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus, Star } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useMemo } from 'react'
 
@@ -175,13 +175,27 @@ export function ModeratorScreen({
             <Card className="backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl shadow-purple-500/10">
               <CardHeader className="backdrop-blur-sm bg-white/10 border-b border-white/20">
                 <div className="flex items-center justify-between">
-                  <Badge 
-                    variant="secondary" 
-                    className="text-lg px-4 py-2 backdrop-blur-md bg-white/40 border border-white/50"
-                    style={{ color: '#800020' }}
-                  >
-                    {currentQuestion.category}
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="secondary"
+                      className="text-lg px-4 py-2 backdrop-blur-md bg-white/40 border border-white/50"
+                      style={{ color: '#800020' }}
+                    >
+                      {currentQuestion.category}
+                    </Badge>
+                    <div className="flex items-center gap-0.5" title="الصعوبة">
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <Star
+                          key={level}
+                          className={`w-4 h-4 ${
+                            level <= (currentQuestion.difficulty || 3)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <Timer
                     timeLeft={timer.timeLeft}
                     isPaused={timer.isPaused}

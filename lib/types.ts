@@ -3,6 +3,7 @@ export interface Question {
   category: string
   question: string
   answer: string
+  difficulty: 1 | 2 | 3 | 4 | 5
   code?: string
   media?: {
     type: 'image' | 'video' | 'audio' | 'youtube'
@@ -32,6 +33,8 @@ export interface GameState {
     isRunning: boolean
   }
   viewMode: 'public' | 'moderator'
+  team1DifficultyTotal: number
+  team2DifficultyTotal: number
 }
 
 export const CATEGORIES = [

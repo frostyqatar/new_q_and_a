@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { storage } from '@/lib/storage'
 import { parseQuestions, questionsToText } from '@/lib/questionParser'
 import { CATEGORIES, CATEGORIES_EN, type Question } from '@/lib/types'
-import { Copy, Check, Home, Trash2 } from 'lucide-react'
+import { validateDifficultyBalance } from '@/lib/difficultyValidation'
+import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -21,6 +22,8 @@ export default function AdminPage() {
   const [copied, setCopied] = useState(false)
   const [chatGPTResult, setChatGPTResult] = useState('')
   const [isEditingAll, setIsEditingAll] = useState(false)
+
+  const difficultyValidation = useMemo(() => validateDifficultyBalance(questions), [questions])
 
   useEffect(() => {
     const savedQuestions = storage.getQuestions()
@@ -93,6 +96,14 @@ export default function AdminPage() {
 
   const handleDeleteQuestion = (id: string) => {
     const updatedQuestions = questions.filter((q) => q.id !== id)
+    setQuestions(updatedQuestions)
+    storage.saveQuestions(updatedQuestions)
+  }
+
+  const handleSetDifficulty = (id: string, difficulty: 1 | 2 | 3 | 4 | 5) => {
+    const updatedQuestions = questions.map((q) =>
+      q.id === id ? { ...q, difficulty } : q
+    )
     setQuestions(updatedQuestions)
     storage.saveQuestions(updatedQuestions)
   }
@@ -429,6 +440,80 @@ https://youtube.com/watch?v=abc123`}
           </Card>
         </div>
 
+        {/* Difficulty Balance Panel */}
+        {questions.length > 0 && (
+          <Card className={difficultyValidation.isBalanced
+            ? 'border-green-300 bg-green-50/50'
+            : 'border-red-300 bg-red-50/50'
+          }>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                {difficultyValidation.isBalanced ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                )}
+                <CardTitle className={`text-lg ${difficultyValidation.isBalanced ? 'text-green-800' : 'text-red-800'}`}>
+                  {difficultyValidation.isBalanced
+                    ? 'توزيع الصعوبة متوازن - جاهز للعب!'
+                    : 'توزيع الصعوبة غير متوازن - لا يمكن بدء اللعبة'}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="grid grid-cols-5 gap-2">
+                  {difficultyValidation.breakdown.map((b) => (
+                    <div
+                      key={b.level}
+                      className={`text-center p-2 rounded-lg border ${
+                        b.count === 0
+                          ? 'bg-gray-50 border-gray-200'
+                          : b.isEven
+                            ? 'bg-green-50 border-green-300'
+                            : 'bg-red-50 border-red-300'
+                      }`}
+                    >
+                      <div className="flex justify-center gap-0.5 mb-1">
+                        {[...Array(b.level)].map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
+                      <div className={`text-2xl font-bold ${
+                        b.count === 0
+                          ? 'text-gray-400'
+                          : b.isEven
+                            ? 'text-green-700'
+                            : 'text-red-700'
+                      }`}>
+                        {b.count}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {b.count > 0 && b.isEven && `${b.count / 2} لكل فريق`}
+                        {b.count > 0 && !b.isEven && 'عدد فردي!'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {!difficultyValidation.isEvenTotal && (
+                  <div className="text-sm text-red-700 bg-red-100 rounded-lg px-3 py-2">
+                    إجمالي الأسئلة ({difficultyValidation.totalQuestions}) عدد فردي. يجب أن يكون زوجياً للتوزيع المتساوي.
+                  </div>
+                )}
+
+                {difficultyValidation.unbalancedLevels.length > 0 && (
+                  <div className="text-sm text-red-700 bg-red-100 rounded-lg px-3 py-2">
+                    المستويات التالية تحتوي على عدد فردي من الأسئلة:{' '}
+                    {difficultyValidation.unbalancedLevels.map((l) => `${l}`).join('، ')}
+                    {' '}- أضف أو احذف سؤالاً في كل مستوى ليصبح العدد زوجياً.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Questions List */}
         <Card>
           <CardHeader>
@@ -467,8 +552,28 @@ https://youtube.com/watch?v=abc123`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Badge variant="secondary">{question.category}</Badge>
+                          <div className="flex items-center gap-0.5" title="الصعوبة">
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <button
+                                key={level}
+                                onClick={() => handleSetDifficulty(question.id, level as 1 | 2 | 3 | 4 | 5)}
+                                className="p-0 hover:scale-125 transition-transform"
+                              >
+                                <Star
+                                  className={`w-4 h-4 ${
+                                    level <= (question.difficulty || 3)
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                            <span className="text-xs text-muted-foreground mr-1">
+                              ({question.difficulty || 3}/5)
+                            </span>
+                          </div>
                         </div>
                         <p className="font-semibold text-lg mb-2">
                           {question.question}
