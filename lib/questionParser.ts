@@ -92,6 +92,7 @@ export function parseQuestions(text: string): Question[] {
   let currentAnswerLines: string[] = [] // Track answer lines to preserve multiline
   let currentCode = ''
   let currentMedia: Question['media'] | undefined = undefined
+  let currentDifficulty: 1 | 2 | 3 | 4 | 5 = 3
   let collectingAnswer = false
   
   for (let i = 0; i < processedLines.length; i++) {
@@ -134,6 +135,13 @@ export function parseQuestions(text: string): Question[] {
       if (!line) continue
     }
     
+    // Check for difficulty tag (e.g., #difficulty#3 or #صعوبة#3)
+    const difficultyMatch = line.match(/^#(?:difficulty|صعوبة)#([1-5])$/)
+    if (difficultyMatch) {
+      currentDifficulty = parseInt(difficultyMatch[1]) as 1 | 2 | 3 | 4 | 5
+      continue
+    }
+
     // Check if line is a category
     // Simple rule: If line ends with ":", it's a category
     const isCategory = line.endsWith(':') || line.endsWith('：') // Support both English and Arabic colon
@@ -162,6 +170,7 @@ export function parseQuestions(text: string): Question[] {
             category: currentCategory || 'معلومات عامة وممتعة',
             question: currentQuestion,
             answer: finalAnswer,
+            difficulty: currentDifficulty,
             code: currentCode || undefined,
             media: currentMedia,
           })
@@ -172,6 +181,7 @@ export function parseQuestions(text: string): Question[] {
           currentCode = ''
           collectingAnswer = false
           currentMedia = undefined
+          currentDifficulty = 3
         }
         // Ignore duplicate category line and continue
         continue
@@ -187,11 +197,12 @@ export function parseQuestions(text: string): Question[] {
           category: currentCategory || 'معلومات عامة وممتعة',
           question: currentQuestion,
           answer: finalAnswer,
+          difficulty: currentDifficulty,
           code: currentCode || undefined,
           media: currentMedia,
         })
       }
-      
+
       // Set new category (different from current)
       currentCategory = newCategory
       currentQuestion = ''
@@ -200,6 +211,7 @@ export function parseQuestions(text: string): Question[] {
       currentCode = ''
       collectingAnswer = false
       currentMedia = undefined
+      currentDifficulty = 3
       continue
     }
     
@@ -253,7 +265,7 @@ export function parseQuestions(text: string): Question[] {
     if (isQuestion) {
       // Save previous question if exists
       if (currentQuestion && (currentAnswer || currentAnswerLines.length > 0)) {
-        const finalAnswer = currentAnswerLines.length > 0 
+        const finalAnswer = currentAnswerLines.length > 0
           ? currentAnswerLines.join('\n')
           : currentAnswer
         questions.push({
@@ -261,6 +273,7 @@ export function parseQuestions(text: string): Question[] {
           category: currentCategory || 'معلومات عامة وممتعة',
           question: currentQuestion,
           answer: finalAnswer,
+          difficulty: currentDifficulty,
           code: currentCode || undefined,
           media: currentMedia,
         })
@@ -272,6 +285,7 @@ export function parseQuestions(text: string): Question[] {
       currentCode = ''
       collectingAnswer = false // Will be set to true when we start collecting answer
       currentMedia = undefined
+      currentDifficulty = 3
       continue
     }
     
@@ -284,7 +298,7 @@ export function parseQuestions(text: string): Question[] {
       if (looksLikeNewQuestion) {
         // Save current question first
         if (currentAnswerLines.length > 0 || currentAnswer) {
-          const finalAnswer = currentAnswerLines.length > 0 
+          const finalAnswer = currentAnswerLines.length > 0
             ? currentAnswerLines.join('\n')
             : currentAnswer
           questions.push({
@@ -292,6 +306,7 @@ export function parseQuestions(text: string): Question[] {
             category: currentCategory || 'معلومات عامة وممتعة',
             question: currentQuestion,
             answer: finalAnswer,
+            difficulty: currentDifficulty,
             code: currentCode || undefined,
             media: currentMedia,
           })
@@ -303,6 +318,7 @@ export function parseQuestions(text: string): Question[] {
         currentCode = ''
         collectingAnswer = false
         currentMedia = undefined
+        currentDifficulty = 3
         continue
       }
       
@@ -326,7 +342,7 @@ export function parseQuestions(text: string): Question[] {
   
   // Save last question
   if (currentQuestion && (currentAnswer || currentAnswerLines.length > 0)) {
-    const finalAnswer = currentAnswerLines.length > 0 
+    const finalAnswer = currentAnswerLines.length > 0
       ? currentAnswerLines.join('\n')
       : currentAnswer
     questions.push({
@@ -334,6 +350,7 @@ export function parseQuestions(text: string): Question[] {
       category: currentCategory || 'معلومات عامة وممتعة',
       question: currentQuestion,
       answer: finalAnswer,
+      difficulty: currentDifficulty,
       code: currentCode || undefined,
       media: currentMedia,
     })
@@ -361,6 +378,11 @@ export function questionsToText(questions: Question[]): string {
       currentCategory = q.category
     }
     
+    // Add difficulty if not default (3)
+    if (q.difficulty && q.difficulty !== 3) {
+      text += `#difficulty#${q.difficulty}\n`
+    }
+
     // Add question
     text += q.question + '\n'
     

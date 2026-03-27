@@ -48,6 +48,8 @@ export default function HomeScreen() {
         isRunning: false,
       },
       viewMode: 'public' as const,
+      team1DifficultyTotal: 0,
+      team2DifficultyTotal: 0,
     }
     
     storage.saveGameState(gameState)

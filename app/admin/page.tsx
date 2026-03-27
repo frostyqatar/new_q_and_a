@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { storage } from '@/lib/storage'
 import { parseQuestions, questionsToText } from '@/lib/questionParser'
 import { CATEGORIES, CATEGORIES_EN, type Question } from '@/lib/types'
-import { Copy, Check, Home, Trash2 } from 'lucide-react'
+import { Copy, Check, Home, Trash2, Star } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -93,6 +93,14 @@ export default function AdminPage() {
 
   const handleDeleteQuestion = (id: string) => {
     const updatedQuestions = questions.filter((q) => q.id !== id)
+    setQuestions(updatedQuestions)
+    storage.saveQuestions(updatedQuestions)
+  }
+
+  const handleSetDifficulty = (id: string, difficulty: 1 | 2 | 3 | 4 | 5) => {
+    const updatedQuestions = questions.map((q) =>
+      q.id === id ? { ...q, difficulty } : q
+    )
     setQuestions(updatedQuestions)
     storage.saveQuestions(updatedQuestions)
   }
@@ -467,8 +475,28 @@ https://youtube.com/watch?v=abc123`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <Badge variant="secondary">{question.category}</Badge>
+                          <div className="flex items-center gap-0.5" title="الصعوبة">
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <button
+                                key={level}
+                                onClick={() => handleSetDifficulty(question.id, level as 1 | 2 | 3 | 4 | 5)}
+                                className="p-0 hover:scale-125 transition-transform"
+                              >
+                                <Star
+                                  className={`w-4 h-4 ${
+                                    level <= (question.difficulty || 3)
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              </button>
+                            ))}
+                            <span className="text-xs text-muted-foreground mr-1">
+                              ({question.difficulty || 3}/5)
+                            </span>
+                          </div>
                         </div>
                         <p className="font-semibold text-lg mb-2">
                           {question.question}
