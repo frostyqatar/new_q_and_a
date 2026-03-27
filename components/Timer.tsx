@@ -56,13 +56,22 @@ export function Timer({
   const minutes = Math.floor(displayTime / 60)
   const seconds = displayTime % 60
   const isLowTime = displayTime <= 10
+  const isCritical = displayTime <= 5
 
   return (
-    <div className={cn('flex items-center gap-2 backdrop-blur-md bg-white/40 border border-white/50 rounded-lg px-4 py-2 shadow-lg shadow-purple-500/10', className)}>
-      <Clock className={cn('w-5 h-5 text-gray-800', isLowTime && 'text-red-500 animate-pulse')} />
+    <div className={cn(
+      'flex items-center gap-2 backdrop-blur-md border rounded-lg px-4 py-2 shadow-lg transition-all duration-300',
+      isLowTime
+        ? 'bg-red-100/60 border-red-300/60 shadow-red-500/20'
+        : 'bg-white/40 border-white/50 shadow-purple-500/10',
+      isCritical && 'animate-pulse-urgent',
+      className
+    )}>
+      <Clock className={cn('w-5 h-5 text-gray-800 transition-colors', isLowTime && 'text-red-500 animate-pulse')} />
       <div className={cn(
-        'text-3xl font-bold font-mono text-gray-800',
-        isLowTime && 'text-red-600'
+        'text-3xl font-bold font-mono text-gray-800 transition-colors',
+        isLowTime && 'text-red-600',
+        isCritical && 'text-red-700'
       )}>
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
       </div>

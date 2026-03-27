@@ -11,7 +11,7 @@ import { storage } from '@/lib/storage'
 import { parseQuestions, questionsToText } from '@/lib/questionParser'
 import { CATEGORIES, CATEGORIES_EN, type Question } from '@/lib/types'
 import { validateDifficultyBalance } from '@/lib/difficultyValidation'
-import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Filter } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -22,8 +22,14 @@ export default function AdminPage() {
   const [copied, setCopied] = useState(false)
   const [chatGPTResult, setChatGPTResult] = useState('')
   const [isEditingAll, setIsEditingAll] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
+  const [filterDifficulty, setFilterDifficulty] = useState<number | null>(null)
 
   const difficultyValidation = useMemo(() => validateDifficultyBalance(questions), [questions])
+  const filteredQuestions = useMemo(() => {
+    if (filterDifficulty === null) return questions
+    return questions.filter((q) => (q.difficulty || 3) === filterDifficulty)
+  }, [questions, filterDifficulty])
 
   useEffect(() => {
     const savedQuestions = storage.getQuestions()
@@ -226,58 +232,48 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>إضافة أسئلة يدوياً</CardTitle>
-              <CardDescription className="space-y-3">
-                <div className="text-base font-medium">
-                  التنسيق الأساسي:
+              <CardDescription className="space-y-2">
+                <div className="text-sm">
+                  الفئة: &rarr; السؤال؟ &rarr; الجواب (كل سطر منفصل)
                 </div>
-                <div className="text-sm leading-relaxed space-y-2">
-                  <div>
-                    • الفئة: (يجب أن تنتهي بعلامة النقطتين : في سطر منفصل)
-                  </div>
-                  <div>
-                    • السؤال؟ (يجب أن ينتهي بعلامة استفهام)
-                  </div>
-                  <div>
-                    • الجواب (في سطر منفصل)
-                  </div>
-                  <div className="mt-3 pt-3 border-t">
-                    <strong>لإضافة وسائط:</strong>
-                  </div>
-                  <div>
-                    ضع رابط الصورة/الفيديو/الصوت/اليوتيوب بعد الجواب في سطر منفصل.
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                    <div><strong>الصور:</strong> .jpg, .png, .gif, .webp, .svg</div>
-                    <div><strong>الفيديو:</strong> .mp4, .webm, .ogg</div>
-                    <div><strong>الصوت:</strong> .mp3, .wav, .ogg, .m4a</div>
-                    <div><strong>YouTube:</strong> أي رابط youtube.com/watch أو youtu.be/</div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t text-xs">
-                    <strong>أمثلة:</strong>
-                    <div className="mt-1 font-mono text-xs bg-muted p-2 rounded">
-                      <div className="mb-1">مثال مع صورة:</div>
-                      <div>حقائق الحيوانات:</div>
-                      <div>ما اسم هذا الحيوان؟</div>
-                      <div>الأسد</div>
-                      <div>https://example.com/lion.jpg</div>
-                      <div className="mt-2 mb-1">مثال مع فيديو:</div>
-                      <div>التاريخ:</div>
-                      <div>ما هي عاصمة فرنسا؟</div>
-                      <div>باريس</div>
-                      <div>https://example.com/paris.mp4</div>
-                      <div className="mt-2 mb-1">مثال مع صوت:</div>
-                      <div>الموسيقى:</div>
-                      <div>ما اسم هذه الأغنية؟</div>
-                      <div>أغنية جميلة</div>
-                      <div>https://example.com/song.mp3</div>
-                      <div className="mt-2 mb-1">مثال مع YouTube:</div>
-                      <div>العلوم:</div>
-                      <div>ما هو هذا الكوكب؟</div>
-                      <div>المريخ</div>
-                      <div>https://youtube.com/watch?v=abc123</div>
+                <button
+                  type="button"
+                  onClick={() => setShowInstructions(!showInstructions)}
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+                >
+                  {showInstructions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showInstructions ? 'إخفاء التعليمات' : 'عرض التعليمات والأمثلة'}
+                </button>
+                {showInstructions && (
+                  <div className="text-sm leading-relaxed space-y-2 pt-2 border-t animate-fade-slide-in">
+                    <div>
+                      • الفئة: (يجب أن تنتهي بعلامة النقطتين : في سطر منفصل)
+                    </div>
+                    <div>
+                      • السؤال؟ (يجب أن ينتهي بعلامة استفهام)
+                    </div>
+                    <div>
+                      • الجواب (في سطر منفصل)
+                    </div>
+                    <div className="mt-2 pt-2 border-t">
+                      <strong>لإضافة وسائط:</strong> ضع الرابط بعد الجواب في سطر منفصل.
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div><strong>الصور:</strong> .jpg, .png, .gif, .webp, .svg</div>
+                      <div><strong>الفيديو:</strong> .mp4, .webm, .ogg</div>
+                      <div><strong>الصوت:</strong> .mp3, .wav, .m4a</div>
+                      <div><strong>YouTube:</strong> أي رابط youtube.com/watch أو youtu.be/</div>
+                    </div>
+                    <div className="text-xs mt-2 pt-2 border-t">
+                      <strong>مثال:</strong>
+                      <div className="mt-1 font-mono text-xs bg-muted p-2 rounded">
+                        <div>العلوم والاختراعات:</div>
+                        <div>ما هو العنصر الكيميائي للذهب؟</div>
+                        <div>Au</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -466,13 +462,14 @@ https://youtube.com/watch?v=abc123`}
                   {difficultyValidation.breakdown.map((b) => (
                     <div
                       key={b.level}
-                      className={`text-center p-2 rounded-lg border ${
+                      onClick={() => b.count > 0 && setFilterDifficulty(filterDifficulty === b.level ? null : b.level)}
+                      className={`text-center p-2 rounded-lg border transition-all ${
                         b.count === 0
                           ? 'bg-gray-50 border-gray-200'
                           : b.isEven
-                            ? 'bg-green-50 border-green-300'
-                            : 'bg-red-50 border-red-300'
-                      }`}
+                            ? 'bg-green-50 border-green-300 cursor-pointer hover:shadow-md'
+                            : 'bg-red-50 border-red-300 cursor-pointer hover:shadow-md'
+                      } ${filterDifficulty === b.level ? 'ring-2 ring-yellow-400 shadow-md' : ''}`}
                     >
                       <div className="flex justify-center gap-0.5 mb-1">
                         {[...Array(b.level)].map((_, i) => (
@@ -521,31 +518,83 @@ https://youtube.com/watch?v=abc123`}
               <div>
                 <CardTitle>
                   الأسئلة ({questions.length})
+                  {filterDifficulty !== null && (
+                    <span className="text-sm font-normal text-muted-foreground mr-2">
+                      (عرض {filteredQuestions.length})
+                    </span>
+                  )}
                 </CardTitle>
                 <CardDescription>
-                  إجمالي الأسئلة المحفوظة
+                  {(() => {
+                    const cats = new Set(questions.map(q => q.category))
+                    return `${cats.size} فئات`
+                  })()}
                 </CardDescription>
               </div>
-              {questions.length > 0 && (
-                <Button
-                  onClick={handleDeleteAll}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <Trash2 className="w-4 h-4 ml-2" />
-                  حذف الكل
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {questions.length > 0 && (
+                  <Button
+                    onClick={handleDeleteAll}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    <Trash2 className="w-4 h-4 ml-2" />
+                    حذف الكل
+                  </Button>
+                )}
+              </div>
             </div>
+            {/* Difficulty filter bar */}
+            {questions.length > 0 && (
+              <div className="flex items-center gap-2 pt-2 flex-wrap">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <button
+                  type="button"
+                  onClick={() => setFilterDifficulty(null)}
+                  className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                    filterDifficulty === null
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  الكل
+                </button>
+                {[1, 2, 3, 4, 5].map((level) => {
+                  const count = questions.filter(q => (q.difficulty || 3) === level).length
+                  if (count === 0) return null
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setFilterDifficulty(filterDifficulty === level ? null : level)}
+                      className={`px-3 py-1 rounded-full text-xs transition-colors flex items-center gap-1 ${
+                        filterDifficulty === level
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {[...Array(level)].map((_, i) => (
+                        <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                      ))}
+                      <span>({count})</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {questions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 لا توجد أسئلة بعد. أضف بعض الأسئلة للبدء.
               </p>
+            ) : filteredQuestions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                لا توجد أسئلة بهذه الصعوبة.
+              </p>
             ) : (
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {questions.map((question) => (
+                {filteredQuestions.map((question) => (
                   <div
                     key={question.id}
                     className="p-4 border rounded-lg space-y-2"

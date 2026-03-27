@@ -9,7 +9,7 @@ import { CodeDisplay } from '@/components/CodeDisplay'
 import type { Team, Question } from '@/lib/types'
 import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus, Star } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 
 interface ModeratorScreenProps {
   team1: Team
@@ -68,6 +68,30 @@ export function ModeratorScreen({
     }
     return '/bell'
   }, [])
+
+  // Track score changes for pop animation
+  const [score1Animate, setScore1Animate] = useState(false)
+  const [score2Animate, setScore2Animate] = useState(false)
+  const prevScore1 = useRef(team1.correct)
+  const prevScore2 = useRef(team2.correct)
+
+  useEffect(() => {
+    if (team1.correct !== prevScore1.current) {
+      setScore1Animate(true)
+      prevScore1.current = team1.correct
+      const t = setTimeout(() => setScore1Animate(false), 400)
+      return () => clearTimeout(t)
+    }
+  }, [team1.correct])
+
+  useEffect(() => {
+    if (team2.correct !== prevScore2.current) {
+      setScore2Animate(true)
+      prevScore2.current = team2.correct
+      const t = setTimeout(() => setScore2Animate(false), 400)
+      return () => clearTimeout(t)
+    }
+  }, [team2.correct])
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
@@ -210,7 +234,7 @@ export function ModeratorScreen({
               <CardContent className="space-y-6">
                 {isAnswerRevealed ? (
                   <>
-                    <div className="text-center space-y-4">
+                    <div className="text-center space-y-4 animate-reveal-answer">
                       <div className="text-xl text-gray-700 mb-2 backdrop-blur-sm bg-white/20 rounded-lg px-4 py-2 inline-block">
                         الإجابة الصحيحة:
                       </div>
@@ -219,11 +243,11 @@ export function ModeratorScreen({
                       </div>
                     </div>
 
-                    <div className="flex gap-4 justify-center pt-4">
+                    <div className="flex gap-4 justify-center pt-4 animate-fade-slide-in" style={{ animationDelay: '0.15s' }}>
                       <Button
                         onClick={onCorrect}
                         size="lg"
-                        className="backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300"
+                        className="animate-button-press backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300"
                       >
                         <CheckCircle2 className="w-6 h-6 ml-2" />
                         صحيح
@@ -231,7 +255,7 @@ export function ModeratorScreen({
                       <Button
                         onClick={onIncorrect}
                         size="lg"
-                        className="backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
+                        className="animate-button-press backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
                       >
                         <XCircle className="w-6 h-6 ml-2" />
                         خطأ
@@ -239,7 +263,7 @@ export function ModeratorScreen({
                     </div>
                   </>
                 ) : (
-                  <>
+                  <div key={currentQuestion.id} className="animate-fade-slide-in">
                     <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800">
                       {currentQuestion.question}
                     </div>
@@ -260,13 +284,13 @@ export function ModeratorScreen({
                       <Button
                         onClick={onRevealAnswer}
                         size="lg"
-                        className="backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                        className="animate-button-press backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
                       >
                         <Eye className="w-6 h-6 ml-2" />
                         كشف
                       </Button>
                     </div>
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -311,7 +335,7 @@ export function ModeratorScreen({
                                 <Minus className="w-4 h-4" />
                               </Button>
                             )}
-                            <span className="text-2xl font-bold">{team1.correct}</span>
+                            <span className={`text-2xl font-bold transition-transform ${score1Animate ? 'animate-score-pop' : ''}`}>{team1.correct}</span>
                             {onIncrementScore && (
                               <Button
                                 variant="ghost"
@@ -347,7 +371,7 @@ export function ModeratorScreen({
                                 <Minus className="w-4 h-4" />
                               </Button>
                             )}
-                            <span className="text-2xl font-bold text-gray-800">{team1.correct}</span>
+                            <span className={`text-2xl font-bold text-gray-800 transition-transform ${score1Animate ? 'animate-score-pop' : ''}`}>{team1.correct}</span>
                             {onIncrementScore && (
                               <Button
                                 variant="ghost"
@@ -397,7 +421,7 @@ export function ModeratorScreen({
                                 <Minus className="w-4 h-4" />
                               </Button>
                             )}
-                            <span className="text-2xl font-bold">{team2.correct}</span>
+                            <span className={`text-2xl font-bold transition-transform ${score2Animate ? 'animate-score-pop' : ''}`}>{team2.correct}</span>
                             {onIncrementScore && (
                               <Button
                                 variant="ghost"
@@ -433,7 +457,7 @@ export function ModeratorScreen({
                                 <Minus className="w-4 h-4" />
                               </Button>
                             )}
-                            <span className="text-2xl font-bold text-gray-800">{team2.correct}</span>
+                            <span className={`text-2xl font-bold text-gray-800 transition-transform ${score2Animate ? 'animate-score-pop' : ''}`}>{team2.correct}</span>
                             {onIncrementScore && (
                               <Button
                                 variant="ghost"
@@ -466,9 +490,11 @@ export function ModeratorScreen({
                     </div>
                     <div className="w-full backdrop-blur-sm bg-white/30 rounded-full h-3 border border-white/40 shadow-inner">
                       <div
-                        className="bg-gradient-to-r from-blue-500/80 to-purple-500/80 h-3 rounded-full transition-all duration-300 shadow-lg shadow-purple-500/20"
+                        className="bg-gradient-to-r from-blue-500/80 to-purple-500/80 h-3 rounded-full transition-all duration-500 ease-out shadow-lg shadow-purple-500/20 relative overflow-hidden"
                         style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
-                      />
+                      >
+                        <div className="absolute inset-0 animate-shimmer" />
+                      </div>
                     </div>
                   </div>
                 </CardContent>
