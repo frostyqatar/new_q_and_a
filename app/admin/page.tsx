@@ -602,7 +602,7 @@ https://youtube.com/watch?v=abc123`}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <Badge variant="secondary">{question.category}</Badge>
+                          <Badge variant="secondary" dir="auto">{question.category}</Badge>
                           <div className="flex items-center gap-0.5" title="الصعوبة">
                             {[1, 2, 3, 4, 5].map((level) => (
                               <button
@@ -624,10 +624,10 @@ https://youtube.com/watch?v=abc123`}
                             </span>
                           </div>
                         </div>
-                        <p className="font-semibold text-lg mb-2">
+                        <p className="font-semibold text-lg mb-2" dir="auto">
                           {question.question}
                         </p>
-                        <p className="text-muted-foreground">
+                        <p className="text-muted-foreground" dir="auto">
                           {question.answer}
                         </p>
                         {question.media && (

@@ -13,6 +13,8 @@ interface TimerProps {
   onResume: () => void
   onTimeUp: () => void
   onTick?: (timeLeft: number) => void
+  /** Click the clock icon to reset (e.g. full round duration). Omit to disable. */
+  onReset?: () => void
   className?: string
 }
 
@@ -24,6 +26,7 @@ export function Timer({
   onResume,
   onTimeUp,
   onTick,
+  onReset,
   className,
 }: TimerProps) {
   const [displayTime, setDisplayTime] = useState(timeLeft)
@@ -60,14 +63,29 @@ export function Timer({
 
   return (
     <div className={cn(
-      'flex items-center gap-2 backdrop-blur-md border rounded-lg px-4 py-2 shadow-lg transition-all duration-300',
+      'flex items-center gap-2 backdrop-blur-md border rounded-lg px-4 py-2 shadow-lg transition-colors duration-300',
       isLowTime
         ? 'bg-red-100/60 border-red-300/60 shadow-red-500/20'
         : 'bg-white/40 border-white/50 shadow-purple-500/10',
-      isCritical && 'animate-pulse-urgent',
+      isCritical && 'border-red-400/90 shadow-red-500/25',
       className
     )}>
-      <Clock className={cn('w-5 h-5 text-gray-800 transition-colors', isLowTime && 'text-red-500 animate-pulse')} />
+      {onReset ? (
+        <button
+          type="button"
+          onClick={onReset}
+          className={cn(
+            'rounded-md p-0.5 -m-0.5 transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-1',
+            isLowTime ? 'text-red-600' : 'text-gray-800'
+          )}
+          title="إعادة تعيين المؤقت"
+          aria-label="إعادة تعيين المؤقت"
+        >
+          <Clock className="w-5 h-5" />
+        </button>
+      ) : (
+        <Clock className={cn('w-5 h-5 text-gray-800 transition-colors', isLowTime && 'text-red-600')} />
+      )}
       <div className={cn(
         'text-3xl font-bold font-mono text-gray-800 transition-colors',
         isLowTime && 'text-red-600',

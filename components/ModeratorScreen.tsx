@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Timer } from '@/components/Timer'
 import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
+import { StarBurstOnClick } from '@/components/StarBurstOnClick'
 import type { Team, Question } from '@/lib/types'
 import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus, Star } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -30,6 +31,7 @@ interface ModeratorScreenProps {
   onResumeTimer: () => void
   onTimeUp: () => void
   onTimerTick?: (timeLeft: number) => void
+  onResetTimer?: () => void
   onEndGame: () => void
   isAnswerRevealed: boolean
   viewMode: 'public' | 'moderator'
@@ -54,6 +56,7 @@ export function ModeratorScreen({
   onResumeTimer,
   onTimeUp,
   onTimerTick,
+  onResetTimer,
   onEndGame,
   isAnswerRevealed,
   viewMode,
@@ -94,7 +97,7 @@ export function ModeratorScreen({
   }, [team2.correct])
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-x-hidden">
         {/* Background animated elements */}
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <svg
@@ -126,7 +129,7 @@ export function ModeratorScreen({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6 relative overflow-x-hidden">
       {/* Glassmorphism Background Elements */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         {/* Wave 1 - Top Left */}
@@ -192,18 +195,20 @@ export function ModeratorScreen({
         </svg>
       </div>
 
+      <StarBurstOnClick>
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Question Area */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             <Card className="backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl shadow-purple-500/10">
-              <CardHeader className="backdrop-blur-sm bg-white/10 border-b border-white/20">
+              <CardHeader className="backdrop-blur-sm bg-white/[0.06] border-b border-white/10 p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Badge
                       variant="secondary"
                       className="text-lg px-4 py-2 backdrop-blur-md bg-white/40 border border-white/50"
                       style={{ color: '#800020' }}
+                      dir="auto"
                     >
                       {currentQuestion.category}
                     </Badge>
@@ -228,6 +233,7 @@ export function ModeratorScreen({
                     onResume={onResumeTimer}
                     onTimeUp={onTimeUp}
                     onTick={onTimerTick}
+                    onReset={onResetTimer}
                   />
                 </div>
               </CardHeader>
@@ -238,7 +244,10 @@ export function ModeratorScreen({
                       <div className="text-xl text-gray-700 mb-2 backdrop-blur-sm bg-white/20 rounded-lg px-4 py-2 inline-block">
                         الإجابة الصحيحة:
                       </div>
-                      <div className="text-4xl font-bold text-green-700 backdrop-blur-md bg-green-100/50 border border-green-200/50 p-6 rounded-lg whitespace-pre-line min-h-[120px] flex items-center justify-center shadow-lg shadow-green-500/10">
+                      <div
+                        dir="auto"
+                        className="text-4xl font-bold text-green-700 backdrop-blur-md bg-green-100/50 border border-green-200/50 p-6 rounded-lg whitespace-pre-line min-h-[120px] flex items-center justify-center shadow-lg shadow-green-500/10 break-words leading-relaxed"
+                      >
                         {currentQuestion.answer}
                       </div>
                     </div>
@@ -264,7 +273,10 @@ export function ModeratorScreen({
                   </>
                 ) : (
                   <div key={currentQuestion.id} className="animate-fade-slide-in">
-                    <div className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800">
+                    <div
+                      dir="auto"
+                      className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800 break-words leading-relaxed"
+                    >
                       {currentQuestion.question}
                     </div>
 
@@ -318,7 +330,7 @@ export function ModeratorScreen({
                   >
                     {currentTeam === 1 ? (
                       <div className="shiny-team-card-content">
-                        <div className="font-bold text-lg mb-2">{team1.name}</div>
+                        <div className="font-bold text-lg mb-2" dir="auto">{team1.name}</div>
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-green-700 font-semibold">صحيح:</span>
                           <div className="flex items-center gap-2">
@@ -354,7 +366,7 @@ export function ModeratorScreen({
                       </div>
                     ) : (
                       <>
-                        <div className="font-bold text-lg mb-2 text-gray-800">{team1.name}</div>
+                        <div className="font-bold text-lg mb-2 text-gray-800" dir="auto">{team1.name}</div>
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-green-700 font-semibold">صحيح:</span>
                           <div className="flex items-center gap-2">
@@ -404,7 +416,7 @@ export function ModeratorScreen({
                   >
                     {currentTeam === 2 ? (
                       <div className="shiny-team-card-content">
-                        <div className="font-bold text-lg mb-2">{team2.name}</div>
+                        <div className="font-bold text-lg mb-2" dir="auto">{team2.name}</div>
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-green-700 font-semibold">صحيح:</span>
                           <div className="flex items-center gap-2">
@@ -440,7 +452,7 @@ export function ModeratorScreen({
                       </div>
                     ) : (
                       <>
-                        <div className="font-bold text-lg mb-2 text-gray-800">{team2.name}</div>
+                        <div className="font-bold text-lg mb-2 text-gray-800" dir="auto">{team2.name}</div>
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-green-700 font-semibold">صحيح:</span>
                           <div className="flex items-center gap-2">
@@ -490,7 +502,7 @@ export function ModeratorScreen({
                     </div>
                     <div className="w-full backdrop-blur-sm bg-white/30 rounded-full h-3 border border-white/40 shadow-inner">
                       <div
-                        className="bg-gradient-to-r from-blue-500/80 to-purple-500/80 h-3 rounded-full transition-all duration-500 ease-out shadow-lg shadow-purple-500/20 relative overflow-hidden"
+                        className="bg-gradient-to-r from-blue-500/80 to-purple-500/80 h-3 rounded-full transition-all duration-700 ease-out shadow-lg shadow-purple-500/20 relative overflow-hidden"
                         style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
                       >
                         <div className="absolute inset-0 animate-shimmer" />
@@ -523,6 +535,7 @@ export function ModeratorScreen({
           </div>
         </div>
       </div>
+      </StarBurstOnClick>
     </div>
   )
 }

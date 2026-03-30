@@ -129,19 +129,6 @@
   initial-value: 1;
 }
 
-/* Snake Border Animation Props */
-@property --snake-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes snake-rotate {
-  to {
-    --snake-angle: 360deg;
-  }
-}
-
 .shiny-team-card {
   --shiny-btn-bg: rgba(255, 255, 255, 0.5);
   --shiny-btn-border-width: 1.5;
@@ -250,22 +237,16 @@
   opacity: var(--shiny-before-opacity);
 }
 
+/* Active team: hide rainbow ::before; focus ring is on .shiny-team-card-content */
 .shiny-team-card.active .shiny-team-card-content::before {
-  background: conic-gradient(
-    from var(--snake-angle),
-    transparent 20%,
-    var(--snake-color, #60a5fa) 100%
-  );
-  animation: snake-rotate 8s linear infinite;
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.6;
-  filter: blur(2px);
+  opacity: 0;
 }
 
 .shiny-team-card.active .shiny-team-card-content {
-  border: 1px solid var(--snake-color, #60a5fa);
+  border: 2px solid var(--snake-color, #60a5fa);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--snake-color, #60a5fa) 45%, transparent),
+    0 6px 22px color-mix(in srgb, var(--snake-color, #60a5fa) 22%, transparent);
 }
 
 .shiny-team-card.active,
@@ -291,6 +272,10 @@
   --shiny-after-pos-y: 0;
   --shiny-before-opacity: 1;      
   --shiny-btn-offset: 5;
+}
+
+.shiny-team-card.active {
+  --shiny-btn-scale: 1.02;
 }
 
 .shiny-team-card:active {
@@ -362,11 +347,6 @@
   100% { background-position: 200% 0; }
 }
 
-@keyframes pulseUrgent {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
-}
-
 @keyframes buttonPress {
   0% { transform: scale(1); }
   50% { transform: scale(0.95); }
@@ -374,11 +354,11 @@
 }
 
 .animate-fade-slide-in {
-  animation: fadeSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeSlideIn 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-reveal-answer {
-  animation: revealAnswer 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: revealAnswer 0.78s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-score-pop {
@@ -389,17 +369,37 @@
   background: linear-gradient(
     90deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.28) 50%,
     transparent 70%
   );
   background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-.animate-pulse-urgent {
-  animation: pulseUrgent 0.8s ease-in-out infinite;
+  animation: shimmer 3.8s ease-in-out infinite;
 }
 
 .animate-button-press:active {
-  animation: buttonPress 0.15s ease-out;
+  animation: buttonPress 0.2s ease-out;
+}
+
+/* Click burst (ModeratorScreen StarBurstOnClick) */
+@keyframes starBurstParticle {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateY(-2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(-30px) scale(0.35);
+  }
+}
+
+.star-burst-particle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  transform-origin: center center;
+  animation: starBurstParticle 0.55s ease-out forwards;
 }

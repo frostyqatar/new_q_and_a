@@ -360,6 +360,19 @@ export default function GamePage() {
     })
   }, [gameState, updateGameState])
 
+  const handleResetTimer = useCallback(() => {
+    if (!gameState) return
+    if (gameState.gamePhase !== 'playing') return
+    updateGameState({
+      timer: {
+        ...gameState.timer,
+        timeLeft: 60,
+        isPaused: false,
+        isRunning: true,
+      },
+    })
+  }, [gameState, updateGameState])
+
   const handleEndGame = useCallback(() => {
     if (!gameState) return
     updateGameState({
@@ -482,6 +495,7 @@ export default function GamePage() {
       onResumeTimer={handleResumeTimer}
       onTimeUp={handleTimerUp}
       onTimerTick={handleTimerTick}
+      onResetTimer={isAnswerRevealed ? undefined : handleResetTimer}
       onEndGame={handleEndGame}
       isAnswerRevealed={isAnswerRevealed}
       viewMode="moderator"

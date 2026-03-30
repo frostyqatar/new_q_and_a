@@ -31,6 +31,13 @@ export function ResultsScreen({
 
   useEffect(() => {
     if (winner) {
+      const winAudio = new Audio('/pw23check-winning-218995.mp3')
+      winAudio.preload = 'auto'
+      winAudio.volume = 0.05
+      winAudio.play().catch(() => {
+        /* autoplay may be blocked until user gesture */
+      })
+
       const duration = 3 * 1000
       const animationEnd = Date.now() + duration
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
@@ -58,7 +65,11 @@ export function ResultsScreen({
         })
       }, 250)
 
-      return () => clearInterval(interval)
+      return () => {
+        clearInterval(interval)
+        winAudio.pause()
+        winAudio.src = ''
+      }
     }
   }, [winner])
 
