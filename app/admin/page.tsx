@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,7 +11,9 @@ import { storage } from '@/lib/storage'
 import { parseQuestions, questionsToText } from '@/lib/questionParser'
 import { CATEGORIES, CATEGORIES_EN, type Question } from '@/lib/types'
 import { validateDifficultyBalance } from '@/lib/difficultyValidation'
-import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { autoAssignImages } from '@/lib/autoImage'
+import { ImagePreview } from '@/components/ImagePreview'
+import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Filter, Download, Upload, ImagePlus, Loader2 } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -24,6 +26,9 @@ export default function AdminPage() {
   const [isEditingAll, setIsEditingAll] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
   const [filterDifficulty, setFilterDifficulty] = useState<number | null>(null)
+  const [isAutoImaging, setIsAutoImaging] = useState(false)
+  const [autoImageProgress, setAutoImageProgress] = useState({ done: 0, total: 0 })
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const difficultyValidation = useMemo(() => validateDifficultyBalance(questions), [questions])
   const filteredQuestions = useMemo(() => {
@@ -55,11 +60,10 @@ export default function AdminPage() {
     return () => clearTimeout(timeoutId)
   }, [manualInput, isEditingAll])
 
-  const handleManualAdd = () => {
+  const handleManualAdd = async () => {
     if (!manualInput.trim()) return
 
     if (isEditingAll) {
-      // In edit mode, questions are already updated via useEffect
       setIsEditingAll(false)
       setManualInput('')
     } else {
@@ -68,6 +72,18 @@ export default function AdminPage() {
       setQuestions(updatedQuestions)
       storage.saveQuestions(updatedQuestions)
       setManualInput('')
+      // Auto-assign images to new questions without media
+      const questionsNeedingImages = newQuestions.filter(q => !q.media)
+      if (questionsNeedingImages.length > 0) {
+        setIsAutoImaging(true)
+        setAutoImageProgress({ done: 0, total: questionsNeedingImages.length })
+        const withImages = await autoAssignImages(updatedQuestions, (done, total) => {
+          setAutoImageProgress({ done, total })
+        })
+        setQuestions(withImages)
+        storage.saveQuestions(withImages)
+        setIsAutoImaging(false)
+      }
     }
   }
 
@@ -90,7 +106,7 @@ export default function AdminPage() {
     }
   }
 
-  const handleChatGPTAdd = () => {
+  const handleChatGPTAdd = async () => {
     if (!chatGPTResult.trim()) return
 
     const newQuestions = parseQuestions(chatGPTResult)
@@ -98,6 +114,18 @@ export default function AdminPage() {
     setQuestions(updatedQuestions)
     storage.saveQuestions(updatedQuestions)
     setChatGPTResult('')
+    // Auto-assign images to new questions without media
+    const questionsNeedingImages = newQuestions.filter(q => !q.media)
+    if (questionsNeedingImages.length > 0) {
+      setIsAutoImaging(true)
+      setAutoImageProgress({ done: 0, total: questionsNeedingImages.length })
+      const withImages = await autoAssignImages(updatedQuestions, (done, total) => {
+        setAutoImageProgress({ done, total })
+      })
+      setQuestions(withImages)
+      storage.saveQuestions(withImages)
+      setIsAutoImaging(false)
+    }
   }
 
   const handleDeleteQuestion = (id: string) => {
@@ -112,6 +140,69 @@ export default function AdminPage() {
     )
     setQuestions(updatedQuestions)
     storage.saveQuestions(updatedQuestions)
+  }
+
+  const handleRemoveMedia = (id: string) => {
+    const updatedQuestions = questions.map((q) =>
+      q.id === id ? { ...q, media: undefined } : q
+    )
+    setQuestions(updatedQuestions)
+    storage.saveQuestions(updatedQuestions)
+  }
+
+  const handleAutoAssignImages = useCallback(async () => {
+    if (isAutoImaging || questions.length === 0) return
+    setIsAutoImaging(true)
+    setAutoImageProgress({ done: 0, total: questions.filter(q => !q.media).length })
+    try {
+      const updated = await autoAssignImages(questions, (done, total) => {
+        setAutoImageProgress({ done, total })
+      })
+      setQuestions(updated)
+      storage.saveQuestions(updated)
+    } finally {
+      setIsAutoImaging(false)
+    }
+  }, [questions, isAutoImaging])
+
+  const handleExport = () => {
+    const data = JSON.stringify(questions, null, 2)
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `questions-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target?.result as string) as Question[]
+        if (!Array.isArray(imported) || imported.length === 0) {
+          alert('الملف لا يحتوي على أسئلة صالحة.')
+          return
+        }
+        // Ensure each question has required fields and a unique id
+        const validated = imported.map((q) => ({
+          ...q,
+          id: q.id || `${Date.now()}-${Math.random()}`,
+          difficulty: q.difficulty || 3,
+        })) as Question[]
+        const updatedQuestions = [...questions, ...validated]
+        setQuestions(updatedQuestions)
+        storage.saveQuestions(updatedQuestions)
+      } catch {
+        alert('خطأ في قراءة الملف. تأكد أنه ملف JSON صالح.')
+      }
+    }
+    reader.readAsText(file)
+    // Reset so the same file can be re-imported
+    e.target.value = ''
   }
 
   const toggleCategory = (category: string) => {
@@ -214,17 +305,61 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             إدارة الأسئلة
           </h1>
-          <Button
-            onClick={() => router.push('/')}
-            variant="outline"
-          >
-            <Home className="w-4 h-4 ml-2" />
-            الرئيسية
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {questions.length > 0 && (
+              <>
+                <Button
+                  onClick={handleAutoAssignImages}
+                  variant="outline"
+                  size="sm"
+                  disabled={isAutoImaging || questions.every(q => !!q.media)}
+                >
+                  {isAutoImaging ? (
+                    <>
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      {autoImageProgress.done}/{autoImageProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="w-4 h-4 ml-2" />
+                      صور تلقائية
+                    </>
+                  )}
+                </Button>
+                <Button onClick={handleExport} variant="outline" size="sm">
+                  <Download className="w-4 h-4 ml-2" />
+                  تصدير
+                </Button>
+              </>
+            )}
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              size="sm"
+            >
+              <Upload className="w-4 h-4 ml-2" />
+              استيراد
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImport}
+            />
+            <Button
+              onClick={() => router.push('/')}
+              variant="outline"
+              size="sm"
+            >
+              <Home className="w-4 h-4 ml-2" />
+              الرئيسية
+            </Button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -631,9 +766,11 @@ https://youtube.com/watch?v=abc123`}
                           {question.answer}
                         </p>
                         {question.media && (
-                          <div className="mt-2 text-sm text-blue-600">
-                            📎 {question.media.type}: {question.media.url.substring(0, 50)}...
-                          </div>
+                          <ImagePreview
+                            url={question.media.type === 'youtube' ? question.media.url : question.media.url}
+                            type={question.media.type}
+                            onRemove={() => handleRemoveMedia(question.id)}
+                          />
                         )}
                       </div>
                       <Button
