@@ -1,187 +1,282 @@
 import type { Question } from './types'
 import { CATEGORIES, CATEGORIES_EN } from './types'
 
-/**
- * Map of Arabic category names to English keywords for Wikipedia lookup.
- */
+// ---------------------------------------------------------------------------
+// Arabic stop words: question words, prepositions, pronouns, conjunctions,
+// common verbs, and generic descriptors that are never good image keywords.
+// ---------------------------------------------------------------------------
+const ARABIC_STOP_WORDS = new Set([
+  // Question words
+  'ما', 'ماذا', 'ماهي', 'ماهو', 'من', 'أين', 'اين', 'متى', 'كيف', 'لماذا', 'هل', 'كم', 'أي', 'اي',
+  // Pronouns & demonstratives
+  'هو', 'هي', 'هم', 'هن', 'أنا', 'أنت', 'أنتم', 'نحن', 'هذا', 'هذه', 'ذلك', 'تلك', 'هؤلاء',
+  // Articles & prepositions
+  'ال', 'في', 'من', 'إلى', 'الى', 'على', 'عن', 'مع', 'بين', 'حتى', 'منذ', 'خلال', 'ضد',
+  // Conjunctions & particles
+  'و', 'أو', 'ثم', 'لكن', 'بل', 'أن', 'ان', 'إن', 'لا', 'لم', 'لن', 'قد', 'سوف',
+  'ليس', 'ليست', 'أم',
+  // Common verbs that appear in questions but aren't topics
+  'كان', 'كانت', 'كانوا', 'يكون', 'تكون',
+  'تم', 'يتم', 'بدأت', 'بدأ', 'بدات',
+  'اخترع', 'اخترعت', 'اكتشف', 'اكتشفت', 'اكتشاف',
+  'صناعة', 'صنع', 'صنعت', 'انشاء', 'أنشأ', 'أنشئ', 'أنشئت',
+  'فتحت', 'فتح', 'سقطت', 'سقط',
+  'يوجد', 'توجد', 'يقع', 'تقع',
+  'يبلغ', 'تبلغ', 'يساوي', 'تساوي',
+  'نستطيع', 'نستطع', 'يستطيع', 'نراه', 'نراها',
+  'لديها', 'لديه', 'لديهم',
+  // Generic descriptor nouns that appear in questions but aren't the topic
+  'اسم', 'الاسم', 'يسمى', 'تسمى', 'يعرف', 'تعرف', 'يعني', 'تعني',
+  'أكبر', 'اكبر', 'أصغر', 'اصغر', 'أطول', 'اطول', 'أقصر', 'اقصر',
+  'أسرع', 'اسرع', 'أبطأ', 'أعلى', 'اعلى', 'أدنى', 'أول', 'اول', 'آخر',
+  'أكثر', 'اكثر', 'أقل', 'اقل',
+  'عدد', 'العدد', 'كثير', 'قليل', 'بعض', 'كل', 'جميع',
+  'شيء', 'الشيء', 'نوع', 'النوع', 'شكل', 'الشكل',
+  'مثل', 'غير', 'بعد', 'قبل', 'فوق', 'تحت', 'داخل', 'خارج',
+  'عام', 'العام', 'سنة', 'السنة', 'يوم', 'اليوم', 'تاريخ',
+  'الذي', 'التي', 'الذين', 'اللذين', 'اللتين', 'اللواتي',
+  'عند', 'حول', 'ضمن', 'لدى', 'وفق',
+  'يمكن', 'يجب', 'ينبغي', 'يستطيع',
+  'نقطة', 'استقلال', 'محافظة',
+  'مصدرة', 'مصدر', 'الاساسي', 'الأساسي',
+  'دولة', 'الدولة', 'بلد', 'البلد', 'مدينة', 'المدينة',
+  'العنصر', 'الرمز', 'العاصمة',
+  'الكيميائي', 'الكيميائية', 'الفيزيائي', 'الفيزيائية',
+  'المخترع', 'المكتشف', 'المؤسس', 'الرئيس',
+  'الناتج', 'النتيجة', 'الجواب', 'الإجابة',
+  'السؤال', 'التالي', 'التالية', 'الآتي', 'الآتية',
+  'الصحيح', 'الصحيحة', 'الخاطئ', 'الخاطئة',
+  'العالم', 'حياة', 'معنى', 'شبيه',
+  'حرب', 'شركة', 'ثروة', 'دخل',
+  'جسم', 'الانسان', 'الإنسان',
+  'افريقيا', 'أفريقيا', 'اوروبا', 'أوروبا', 'آسيا', 'امريكية', 'أمريكية', 'لاتينية',
+])
+
+// English stop words for scoring
+const ENGLISH_STOP_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+  'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+  'could', 'should', 'may', 'might', 'shall', 'can', 'need', 'must',
+  'not', 'no', 'nor', 'so', 'if', 'then', 'than', 'too', 'very',
+  'just', 'about', 'above', 'after', 'again', 'all', 'also', 'any',
+  'because', 'before', 'between', 'both', 'each', 'few', 'more', 'most',
+  'other', 'some', 'such', 'that', 'these', 'this', 'those', 'through',
+  'what', 'which', 'who', 'whom', 'why', 'how', 'where', 'when',
+  'here', 'there', 'its', 'it', 'he', 'she', 'they', 'them', 'his', 'her',
+  'our', 'your', 'my', 'out', 'up', 'down', 'only', 'own', 'same',
+  // Programming words
+  'code', 'print', 'return', 'function', 'def', 'var', 'let', 'const',
+  'true', 'false', 'output', 'result', 'value', 'following', 'null',
+  'python', 'java', 'javascript', 'called', 'name', 'named',
+])
+
+// Category -> English keyword fallback
 const CATEGORY_KEYWORDS: Record<string, string> = {}
 CATEGORIES.forEach((cat, i) => {
-  CATEGORY_KEYWORDS[cat] = CATEGORIES_EN[i]
-    ?.replace(/&/g, 'and')
-    .trim() || 'trivia'
+  CATEGORY_KEYWORDS[cat] = CATEGORIES_EN[i]?.replace(/&/g, 'and').trim() || ''
 })
 
-/**
- * Common Arabic-to-English keyword mappings for quiz topics.
- * Keys are checked with `includes()` so partial matches work.
- */
-const ARABIC_TO_ENGLISH: [string, string][] = [
-  // Elements & Materials
-  ['الذهب', 'Gold'], ['الفضة', 'Silver'], ['الحديد', 'Iron'], ['النحاس', 'Copper'],
-  ['الماس', 'Diamond'], ['الماء', 'Water'], ['النار', 'Fire'], ['الهيدروجين', 'Hydrogen'],
-  ['الأكسجين', 'Oxygen'],
-  // Space
-  ['الشمس', 'Sun'], ['القمر', 'Moon'], ['الأرض', 'Earth'], ['المريخ', 'Mars'],
-  ['المشتري', 'Jupiter'], ['زحل', 'Saturn'], ['عطارد', 'Mercury_(planet)'],
-  ['الزهرة', 'Venus'], ['نبتون', 'Neptune'], ['بلوتو', 'Pluto'],
-  ['الثقب الأسود', 'Black_hole'], ['المجرة', 'Galaxy'],
-  // Countries & Cities
-  ['فرنسا', 'France'], ['باريس', 'Paris'], ['لندن', 'London'], ['طوكيو', 'Tokyo'],
-  ['قطر', 'Qatar'], ['الدوحة', 'Doha'], ['مصر', 'Egypt'], ['القاهرة', 'Cairo'],
-  ['السعودية', 'Saudi_Arabia'], ['الرياض', 'Riyadh'], ['دبي', 'Dubai'],
-  ['أمريكا', 'United_States'], ['الصين', 'China'], ['اليابان', 'Japan'],
-  ['ألمانيا', 'Germany'], ['إيطاليا', 'Italy'], ['إسبانيا', 'Spain'],
-  ['البرازيل', 'Brazil'], ['الهند', 'India'], ['روسيا', 'Russia'],
-  ['تركيا', 'Turkey'], ['المغرب', 'Morocco'], ['تونس', 'Tunisia'],
-  ['الكويت', 'Kuwait'], ['البحرين', 'Bahrain'], ['عمان', 'Oman'],
-  // Animals
-  ['الأسد', 'Lion'], ['النمر', 'Tiger'], ['الفيل', 'Elephant'],
-  ['الحوت', 'Whale'], ['الدلفين', 'Dolphin'], ['النسر', 'Eagle'],
-  ['القط', 'Cat'], ['الكلب', 'Dog'], ['الحصان', 'Horse'],
-  ['الزرافة', 'Giraffe'], ['الباندا', 'Giant_panda'], ['الذئب', 'Wolf'],
-  ['الثعبان', 'Snake'], ['التمساح', 'Crocodile'], ['القرش', 'Shark'],
-  ['النحل', 'Honey_bee'], ['الفراشة', 'Butterfly'], ['البطريق', 'Penguin'],
-  // Nature
-  ['البحر', 'Ocean'], ['الجبل', 'Mountain'], ['الصحراء', 'Desert'],
-  ['الغابة', 'Forest'], ['النهر', 'River'], ['البركان', 'Volcano'],
-  ['الشلال', 'Waterfall'], ['الجزيرة', 'Island'],
-  // Body
-  ['القلب', 'Heart'], ['الدماغ', 'Human_brain'], ['العين', 'Human_eye'],
-  ['الرئة', 'Lung'], ['الكبد', 'Liver'], ['الكلية', 'Kidney'],
-  // Sports
-  ['كرة القدم', 'Association_football'], ['كرة السلة', 'Basketball'],
-  ['التنس', 'Tennis'], ['السباحة', 'Swimming_(sport)'],
-  ['ميسي', 'Lionel_Messi'], ['رونالدو', 'Cristiano_Ronaldo'],
-  // People
-  ['أينشتاين', 'Albert_Einstein'], ['نيوتن', 'Isaac_Newton'],
-  ['إديسون', 'Thomas_Edison'], ['دافنشي', 'Leonardo_da_Vinci'],
-  ['شكسبير', 'William_Shakespeare'], ['نابليون', 'Napoleon'],
-  // Tech & Brands
-  ['آيفون', 'IPhone'], ['سامسونج', 'Samsung'], ['أبل', 'Apple_Inc.'],
-  ['جوجل', 'Google'], ['مايكروسوفت', 'Microsoft'],
-  ['تسلا', 'Tesla,_Inc.'], ['أمازون', 'Amazon_(company)'],
-  ['نينتندو', 'Nintendo'], ['سوني', 'Sony'], ['بلايستيشن', 'PlayStation'],
-  // Food
-  ['بيتزا', 'Pizza'], ['سوشي', 'Sushi'], ['شوكولاتة', 'Chocolate'],
-  ['قهوة', 'Coffee'], ['شاي', 'Tea'], ['أرز', 'Rice'], ['خبز', 'Bread'],
-  // Landmarks
-  ['الأهرامات', 'Great_Pyramid_of_Giza'], ['برج إيفل', 'Eiffel_Tower'],
-  ['سور الصين', 'Great_Wall_of_China'], ['تاج محل', 'Taj_Mahal'],
-]
+// ---------------------------------------------------------------------------
+// RAKE-inspired keyword scorer for Arabic & English text
+// ---------------------------------------------------------------------------
+
+interface ScoredWord {
+  word: string
+  score: number
+}
 
 /**
- * Extract the best search terms from a question for Wikipedia lookup.
- * Returns an array of candidates to try in order.
+ * Tokenize Arabic text into words, stripping punctuation.
+ */
+function tokenizeArabic(text: string): string[] {
+  return text
+    .replace(/[؟?!.,:;،؛"""''()\[\]{}<>\/\\|@#$%^&*+=~`]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+/**
+ * Strip the Arabic definite article "ال" prefix for matching purposes.
+ */
+function stripArticle(word: string): string {
+  if (word.startsWith('ال') && word.length > 3) return word.slice(2)
+  return word
+}
+
+/**
+ * Score Arabic words from a question using RAKE-like principles:
+ * - Longer words score higher (more specific)
+ * - Stop words score 0
+ * - Words with Arabic article "ال" get a small boost (likely nouns = topics)
+ * - Words near end of question get positional boost
+ */
+function scoreArabicWords(text: string): ScoredWord[] {
+  const tokens = tokenizeArabic(text)
+  const totalTokens = tokens.length
+  const scored: ScoredWord[] = []
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const stripped = stripArticle(token)
+    if (ARABIC_STOP_WORDS.has(token) || ARABIC_STOP_WORDS.has(stripped)) continue
+    if (token.length <= 2) continue
+
+    let score = token.length * 2
+    if (token.startsWith('ال')) score += 5
+    if (token.length >= 4) score += 3
+
+    // Positional boost: words near end of question are more likely the topic
+    const positionRatio = (i + 1) / totalTokens
+    score += Math.round(positionRatio * 15)
+
+    scored.push({ word: token, score })
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored
+}
+
+/**
+ * Score English words/phrases.
+ */
+function scoreEnglishWords(text: string): ScoredWord[] {
+  const scored: ScoredWord[] = []
+
+  // Extract capitalized phrases first (likely proper nouns / titles)
+  const properNouns = text.match(/[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*/g)
+  if (properNouns) {
+    for (const phrase of properNouns) {
+      if (!ENGLISH_STOP_WORDS.has(phrase.toLowerCase())) {
+        scored.push({ word: phrase, score: 80 + phrase.length })
+      }
+    }
+  }
+
+  // Then individual words
+  const words = text.match(/[a-zA-Z]{3,}/g)
+  if (words) {
+    for (const w of words) {
+      if (!ENGLISH_STOP_WORDS.has(w.toLowerCase())) {
+        scored.push({ word: w, score: 20 + w.length })
+      }
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored
+}
+
+/**
+ * Extract ranked search queries from a question.
+ * Returns a list of search terms to try, best first.
  */
 export function extractKeywords(question: Question): string[] {
-  const answer = question.answer.trim()
   const qText = question.question.trim()
+  const answer = question.answer.trim()
   const candidates: string[] = []
+  const seen = new Set<string>()
 
-  // 1. If answer is English text, use it directly as Wikipedia article title
-  if (/^[a-zA-Z][a-zA-Z0-9\s\-'.()]{1,50}$/.test(answer)) {
-    // Clean up and use as article title (capitalize first letter)
-    const cleaned = answer.replace(/\s+/g, '_')
-    candidates.push(cleaned)
-  }
-
-  // 2. Check Arabic-to-English mappings — answer first, then question
-  for (const [arabic, english] of ARABIC_TO_ENGLISH) {
-    if (answer.includes(arabic)) {
-      candidates.push(english)
-    }
-  }
-  for (const [arabic, english] of ARABIC_TO_ENGLISH) {
-    if (qText.includes(arabic) && !candidates.includes(english)) {
-      candidates.push(english)
+  const addCandidate = (term: string) => {
+    const key = term.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      candidates.push(term)
     }
   }
 
-  // 3. Look for English words in question/answer that could be article titles
-  const allText = `${qText} ${answer}`
-  const englishPhrases = allText.match(/[A-Z][a-zA-Z]{2,}(?:\s+[A-Z][a-zA-Z]{2,})*/g)
-  if (englishPhrases) {
-    for (const phrase of englishPhrases) {
-      const asTitle = phrase.replace(/\s+/g, '_')
-      if (!candidates.includes(asTitle)) {
-        candidates.push(asTitle)
-      }
-    }
+  // 1. Top Arabic keywords from the question (RAKE-scored)
+  const arabicScored = scoreArabicWords(qText)
+  for (const sw of arabicScored.slice(0, 4)) {
+    addCandidate(sw.word)
   }
-  const englishWords = allText.match(/[a-zA-Z]{4,}/g)
-  if (englishWords) {
-    const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'has', 'what', 'which', 'who', 'how', 'why', 'from', 'this', 'that', 'with', 'code', 'print', 'return', 'function', 'true', 'false', 'output', 'result', 'value', 'following', 'python', 'java', 'javascript'])
-    for (const w of englishWords) {
-      if (!stopWords.has(w.toLowerCase()) && !candidates.includes(w)) {
-        candidates.push(w)
-      }
-    }
+
+  // 2. English words from the question
+  const englishScored = scoreEnglishWords(qText)
+  for (const sw of englishScored.slice(0, 2)) {
+    addCandidate(sw.word)
+  }
+
+  // 3. Answer as fallback (lower priority)
+  const answerEnglish = scoreEnglishWords(answer)
+  for (const sw of answerEnglish.slice(0, 2)) {
+    addCandidate(sw.word)
+  }
+  // If answer is a short Arabic/English phrase, use it as-is
+  if (answer.length > 2 && answer.length < 60) {
+    addCandidate(answer)
   }
 
   // 4. Category fallback
   const catKeyword = CATEGORY_KEYWORDS[question.category]
-  if (catKeyword && catKeyword !== 'trivia') {
-    candidates.push(catKeyword.replace(/\s+/g, '_'))
-  }
+  if (catKeyword) addCandidate(catKeyword)
 
   return candidates.length > 0 ? candidates : ['Quiz']
 }
 
+// ---------------------------------------------------------------------------
+// Wikipedia Search API — searches for articles and returns thumbnails.
+// Much more robust than requiring exact article titles.
+// Uses action=query with generator=search to search + get images in one call.
+// ---------------------------------------------------------------------------
+
+interface WikiSearchResult {
+  title: string
+  thumbnail: string | null
+}
+
 /**
- * Fetch a Wikipedia thumbnail URL for a given article title.
- * Tries English Wikipedia first, then Arabic Wikipedia.
- * Returns the thumbnail URL or null if not found.
+ * Search Wikipedia for articles matching a query and return the best
+ * thumbnail found. Searches in one API call using generator=search + pageimages.
  */
-async function fetchWikipediaThumbnail(title: string): Promise<string | null> {
-  // Try English Wikipedia
+async function searchWikipediaImages(
+  query: string,
+  lang: 'ar' | 'en' = 'ar'
+): Promise<string | null> {
+  const domain = `${lang}.wikipedia.org`
+  const params = new URLSearchParams({
+    action: 'query',
+    generator: 'search',
+    gsrsearch: query,
+    gsrlimit: '5',
+    prop: 'pageimages',
+    piprop: 'thumbnail',
+    pithumbsize: '640',
+    format: 'json',
+    origin: '*',
+  })
+
   try {
-    const res = await fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    if (res.ok) {
-      const data = await res.json()
-      if (data.thumbnail?.source) {
-        // Upscale: replace width in the thumbnail URL for a bigger image
-        return data.thumbnail.source.replace(/\/\d+px-/, '/640px-')
-      }
-      if (data.originalimage?.source) {
-        return data.originalimage.source
-      }
+    const res = await fetch(`https://${domain}/w/api.php?${params}`, {
+      signal: AbortSignal.timeout(6000),
+    })
+    if (!res.ok) return null
+
+    const data = await res.json()
+    const pages = data?.query?.pages
+    if (!pages) return null
+
+    // Pages come as an object keyed by page ID. Find the first with a thumbnail.
+    // Sort by index (search relevance order) to get the best match.
+    const pageList: WikiSearchResult[] = Object.values(pages as Record<string, { title: string; index: number; thumbnail?: { source: string } }>)
+      .sort((a, b) => a.index - b.index)
+      .map((p) => ({
+        title: p.title,
+        thumbnail: p.thumbnail?.source || null,
+      }))
+
+    // Return the first result that has a thumbnail
+    for (const page of pageList) {
+      if (page.thumbnail) return page.thumbnail
     }
   } catch {
-    // Network error or timeout — continue to next attempt
+    // timeout or network error
   }
-
   return null
 }
 
 /**
- * Try Arabic Wikipedia as a last resort using the raw Arabic answer text.
- */
-async function fetchArabicWikipediaThumbnail(arabicTitle: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://ar.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(arabicTitle)}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    if (res.ok) {
-      const data = await res.json()
-      if (data.thumbnail?.source) {
-        return data.thumbnail.source.replace(/\/\d+px-/, '/640px-')
-      }
-      if (data.originalimage?.source) {
-        return data.originalimage.source
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return null
-}
-
-/**
- * Validate that an image URL actually loads.
+ * Try to validate an image URL loads correctly in the browser.
  */
 function validateImageUrl(url: string, timeoutMs = 6000): Promise<boolean> {
   return new Promise((resolve) => {
@@ -190,7 +285,6 @@ function validateImageUrl(url: string, timeoutMs = 6000): Promise<boolean> {
       img.src = ''
       resolve(false)
     }, timeoutMs)
-
     img.onload = () => {
       clearTimeout(timer)
       resolve(img.naturalWidth > 10 && img.naturalHeight > 10)
@@ -203,11 +297,10 @@ function validateImageUrl(url: string, timeoutMs = 6000): Promise<boolean> {
   })
 }
 
-/**
- * Auto-assign images to questions that don't have media.
- * Uses Wikipedia article thumbnails for relevant, accurate images.
- * Returns updated questions array.
- */
+// ---------------------------------------------------------------------------
+// Main auto-assign function
+// ---------------------------------------------------------------------------
+
 export async function autoAssignImages(
   questions: Question[],
   onProgress?: (done: number, total: number) => void
@@ -220,31 +313,35 @@ export async function autoAssignImages(
 
   for (const q of needsImage) {
     const keywords = extractKeywords(q)
+
     let found = false
 
-    // Try each keyword candidate until one works
-    for (const keyword of keywords.slice(0, 4)) {
-      const url = await fetchWikipediaThumbnail(keyword)
+    // Try each keyword — first on Arabic Wikipedia, then English Wikipedia
+    for (const keyword of keywords.slice(0, 5)) {
+      if (found) break
+
+      // Try Arabic Wikipedia search first (understands Arabic natively)
+      const hasArabic = /[\u0600-\u06FF]/.test(keyword)
+      if (hasArabic) {
+        const url = await searchWikipediaImages(keyword, 'ar')
+        if (url) {
+          const valid = await validateImageUrl(url)
+          if (valid) {
+            updates.set(q.id, { type: 'image', url })
+            found = true
+            break
+          }
+        }
+      }
+
+      // Try English Wikipedia search
+      const url = await searchWikipediaImages(keyword, 'en')
       if (url) {
         const valid = await validateImageUrl(url)
         if (valid) {
           updates.set(q.id, { type: 'image', url })
           found = true
           break
-        }
-      }
-    }
-
-    // Last resort: try Arabic Wikipedia with the raw answer
-    if (!found) {
-      const arabicAnswer = q.answer.trim()
-      if (arabicAnswer && !/^[a-zA-Z]/.test(arabicAnswer)) {
-        const url = await fetchArabicWikipediaThumbnail(arabicAnswer)
-        if (url) {
-          const valid = await validateImageUrl(url)
-          if (valid) {
-            updates.set(q.id, { type: 'image', url })
-          }
         }
       }
     }
