@@ -46,10 +46,9 @@ const ARABIC_STOP_WORDS = new Set([
   'الناتج', 'النتيجة', 'الجواب', 'الإجابة',
   'السؤال', 'التالي', 'التالية', 'الآتي', 'الآتية',
   'الصحيح', 'الصحيحة', 'الخاطئ', 'الخاطئة',
-  'العالم', 'حياة', 'معنى', 'شبيه',
-  'حرب', 'شركة', 'ثروة', 'دخل',
-  'جسم', 'الانسان', 'الإنسان',
-  'افريقيا', 'أفريقيا', 'اوروبا', 'أوروبا', 'آسيا', 'امريكية', 'أمريكية', 'لاتينية',
+  'العالم', 'معنى', 'شبيه',
+  'ثروة', 'دخل',
+  'الانسان', 'الإنسان',
 ])
 
 // English stop words for scoring
@@ -120,11 +119,18 @@ function scoreArabicWords(text: string): ScoredWord[] {
     const token = tokens[i]
     const stripped = stripArticle(token)
     if (ARABIC_STOP_WORDS.has(token) || ARABIC_STOP_WORDS.has(stripped)) continue
-    if (token.length <= 2) continue
+    // Allow short tokens if they contain digits or are all-uppercase Latin (model numbers like T2, 5G, AI)
+    if (token.length <= 2) {
+      const hasDigit = /\d/.test(token)
+      const isUpperLatin = /^[A-Z]+$/.test(token)
+      if (!hasDigit && !isUpperLatin) continue
+    }
 
     let score = token.length * 2
     if (token.startsWith('ال')) score += 5
     if (token.length >= 4) score += 3
+    // Alphanumeric tokens (model numbers, codes) get a boost
+    if (/[A-Za-z]/.test(token) && /\d/.test(token)) score += 15
 
     // Positional boost: words near end of question are more likely the topic
     const positionRatio = (i + 1) / totalTokens
@@ -168,6 +174,50 @@ function scoreEnglishWords(text: string): ScoredWord[] {
 }
 
 /**
+ * Extract multi-word noun phrases from Arabic text.
+ * Consecutive non-stop-words form a phrase (e.g. "الحرب العالمية الأولى").
+ * Also captures mixed Arabic-English entities like "الجيتور T2".
+ */
+function extractNounPhrases(text: string): ScoredWord[] {
+  // Tokenize keeping both Arabic and Latin/digit tokens
+  const tokens = text
+    .replace(/[؟?!.,:;،؛"""''()\[\]{}<>\/\\|@#$%^&*+=~`]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+  const phrases: ScoredWord[] = []
+  let currentPhrase: string[] = []
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const stripped = stripArticle(token)
+    const isStop = ARABIC_STOP_WORDS.has(token) || ARABIC_STOP_WORDS.has(stripped)
+    // Short non-alphanumeric tokens break phrases, but model numbers (T2) don't
+    const isShortBreaker = token.length <= 2 && !/\d/.test(token) && !/^[A-Z]+$/.test(token)
+    const isBreaker = isStop || isShortBreaker
+
+    if (!isBreaker) {
+      currentPhrase.push(token)
+    } else {
+      if (currentPhrase.length >= 2) {
+        const phrase = currentPhrase.join(' ')
+        const score = 50 + phrase.length * 2 + currentPhrase.length * 10
+        phrases.push({ word: phrase, score })
+      }
+      currentPhrase = []
+    }
+  }
+  // Flush final phrase
+  if (currentPhrase.length >= 2) {
+    const phrase = currentPhrase.join(' ')
+    const score = 50 + phrase.length * 2 + currentPhrase.length * 10
+    phrases.push({ word: phrase, score })
+  }
+
+  phrases.sort((a, b) => b.score - a.score)
+  return phrases
+}
+
+/**
  * Extract ranked search queries from a question.
  * Returns a list of search terms to try, best first.
  */
@@ -185,19 +235,25 @@ export function extractKeywords(question: Question): string[] {
     }
   }
 
-  // 1. Top Arabic keywords from the question (RAKE-scored)
+  // 1. Multi-word noun phrases (highest priority — captures compound entities)
+  const phrases = extractNounPhrases(qText)
+  for (const p of phrases.slice(0, 2)) {
+    addCandidate(p.word)
+  }
+
+  // 2. Top Arabic keywords from the question (RAKE-scored)
   const arabicScored = scoreArabicWords(qText)
   for (const sw of arabicScored.slice(0, 4)) {
     addCandidate(sw.word)
   }
 
-  // 2. English words from the question
+  // 3. English words from the question
   const englishScored = scoreEnglishWords(qText)
   for (const sw of englishScored.slice(0, 2)) {
     addCandidate(sw.word)
   }
 
-  // 3. Answer as fallback (lower priority)
+  // 4. Answer as fallback (lower priority)
   const answerEnglish = scoreEnglishWords(answer)
   for (const sw of answerEnglish.slice(0, 2)) {
     addCandidate(sw.word)
@@ -207,11 +263,45 @@ export function extractKeywords(question: Question): string[] {
     addCandidate(answer)
   }
 
-  // 4. Category fallback
+  // 5. Category fallback
   const catKeyword = CATEGORY_KEYWORDS[question.category]
   if (catKeyword) addCandidate(catKeyword)
 
   return candidates.length > 0 ? candidates : ['Quiz']
+}
+
+/**
+ * Extract English-only keywords for services that need English tags (e.g. LoremFlickr).
+ */
+function extractEnglishKeywords(question: Question): string[] {
+  const qText = question.question.trim()
+  const answer = question.answer.trim()
+  const candidates: string[] = []
+  const seen = new Set<string>()
+
+  const addCandidate = (term: string) => {
+    const key = term.toLowerCase()
+    if (!seen.has(key)) { seen.add(key); candidates.push(term) }
+  }
+
+  // English words from question
+  const englishScored = scoreEnglishWords(qText)
+  for (const sw of englishScored.slice(0, 3)) addCandidate(sw.word)
+
+  // English words from answer
+  const answerEnglish = scoreEnglishWords(answer)
+  for (const sw of answerEnglish.slice(0, 2)) addCandidate(sw.word)
+
+  // Short English/Latin answer as-is
+  if (answer.length > 2 && answer.length < 60 && /[a-zA-Z]/.test(answer)) {
+    addCandidate(answer)
+  }
+
+  // Category English equivalent
+  const catKeyword = CATEGORY_KEYWORDS[question.category]
+  if (catKeyword) addCandidate(catKeyword)
+
+  return candidates.length > 0 ? candidates : ['quiz']
 }
 
 // ---------------------------------------------------------------------------
@@ -298,11 +388,34 @@ function validateImageUrl(url: string, timeoutMs = 6000): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// LoremFlickr — keyword-based stock photos from Flickr
+// ---------------------------------------------------------------------------
+
+export type ImageSource = 'wikipedia' | 'loremflickr'
+
+/**
+ * Generate a deterministic LoremFlickr URL for a keyword.
+ * Uses ?lock= with a hash so the same keyword always returns the same image.
+ */
+function generateLoremFlickrUrl(keyword: string, questionId: string): string {
+  // Simple hash from keyword + questionId for deterministic results
+  let hash = 0
+  const seed = keyword + questionId
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i)
+    hash |= 0
+  }
+  const encoded = encodeURIComponent(keyword.replace(/\s+/g, ','))
+  return `https://loremflickr.com/640/480/${encoded}?lock=${Math.abs(hash)}`
+}
+
+// ---------------------------------------------------------------------------
 // Main auto-assign function
 // ---------------------------------------------------------------------------
 
 export async function autoAssignImages(
   questions: Question[],
+  source: ImageSource = 'wikipedia',
   onProgress?: (done: number, total: number) => void
 ): Promise<Question[]> {
   const needsImage = questions.filter((q) => !q.media)
@@ -312,18 +425,42 @@ export async function autoAssignImages(
   let done = 0
 
   for (const q of needsImage) {
-    const keywords = extractKeywords(q)
-
     let found = false
 
-    // Try each keyword — first on Arabic Wikipedia, then English Wikipedia
-    for (const keyword of keywords.slice(0, 5)) {
-      if (found) break
+    if (source === 'loremflickr') {
+      // LoremFlickr: use English keywords
+      const keywords = extractEnglishKeywords(q)
+      for (const keyword of keywords.slice(0, 3)) {
+        if (found) break
+        const url = generateLoremFlickrUrl(keyword, q.id)
+        const valid = await validateImageUrl(url)
+        if (valid) {
+          updates.set(q.id, { type: 'image', url })
+          found = true
+        }
+      }
+    } else {
+      // Wikipedia: use full keyword extraction (Arabic + English)
+      const keywords = extractKeywords(q)
+      for (const keyword of keywords.slice(0, 5)) {
+        if (found) break
 
-      // Try Arabic Wikipedia search first (understands Arabic natively)
-      const hasArabic = /[\u0600-\u06FF]/.test(keyword)
-      if (hasArabic) {
-        const url = await searchWikipediaImages(keyword, 'ar')
+        // Try Arabic Wikipedia search first (understands Arabic natively)
+        const hasArabic = /[\u0600-\u06FF]/.test(keyword)
+        if (hasArabic) {
+          const url = await searchWikipediaImages(keyword, 'ar')
+          if (url) {
+            const valid = await validateImageUrl(url)
+            if (valid) {
+              updates.set(q.id, { type: 'image', url })
+              found = true
+              break
+            }
+          }
+        }
+
+        // Try English Wikipedia search
+        const url = await searchWikipediaImages(keyword, 'en')
         if (url) {
           const valid = await validateImageUrl(url)
           if (valid) {
@@ -331,17 +468,6 @@ export async function autoAssignImages(
             found = true
             break
           }
-        }
-      }
-
-      // Try English Wikipedia search
-      const url = await searchWikipediaImages(keyword, 'en')
-      if (url) {
-        const valid = await validateImageUrl(url)
-        if (valid) {
-          updates.set(q.id, { type: 'image', url })
-          found = true
-          break
         }
       }
     }

@@ -11,9 +11,9 @@ import { storage } from '@/lib/storage'
 import { parseQuestions, questionsToText } from '@/lib/questionParser'
 import { CATEGORIES, CATEGORIES_EN, type Question } from '@/lib/types'
 import { validateDifficultyBalance } from '@/lib/difficultyValidation'
-import { autoAssignImages } from '@/lib/autoImage'
+import { autoAssignImages, type ImageSource } from '@/lib/autoImage'
 import { ImagePreview } from '@/components/ImagePreview'
-import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Filter, Download, Upload, ImagePlus, Loader2 } from 'lucide-react'
+import { Copy, Check, Home, Trash2, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Filter, Download, Upload, ImagePlus, Loader2, ImageOff, Maximize2, Minimize2, CopyX } from 'lucide-react'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -28,6 +28,10 @@ export default function AdminPage() {
   const [filterDifficulty, setFilterDifficulty] = useState<number | null>(null)
   const [isAutoImaging, setIsAutoImaging] = useState(false)
   const [autoImageProgress, setAutoImageProgress] = useState({ done: 0, total: 0 })
+  const [imageSource, setImageSource] = useState<ImageSource>('wikipedia')
+  const [showImageSourceDropdown, setShowImageSourceDropdown] = useState(false)
+  const imageDropdownRef = useRef<HTMLDivElement>(null)
+  const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const difficultyValidation = useMemo(() => validateDifficultyBalance(questions), [questions])
@@ -44,6 +48,19 @@ export default function AdminPage() {
       setManualInput('')
     }
   }, [])
+
+  // Close image source dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (imageDropdownRef.current && !imageDropdownRef.current.contains(e.target as Node)) {
+        setShowImageSourceDropdown(false)
+      }
+    }
+    if (showImageSourceDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showImageSourceDropdown])
 
   // Auto-update questions when manual input changes in edit mode (debounced)
   useEffect(() => {
@@ -77,7 +94,7 @@ export default function AdminPage() {
       if (questionsNeedingImages.length > 0) {
         setIsAutoImaging(true)
         setAutoImageProgress({ done: 0, total: questionsNeedingImages.length })
-        const withImages = await autoAssignImages(updatedQuestions, (done, total) => {
+        const withImages = await autoAssignImages(updatedQuestions, imageSource, (done, total) => {
           setAutoImageProgress({ done, total })
         })
         setQuestions(withImages)
@@ -119,7 +136,7 @@ export default function AdminPage() {
     if (questionsNeedingImages.length > 0) {
       setIsAutoImaging(true)
       setAutoImageProgress({ done: 0, total: questionsNeedingImages.length })
-      const withImages = await autoAssignImages(updatedQuestions, (done, total) => {
+      const withImages = await autoAssignImages(updatedQuestions, imageSource, (done, total) => {
         setAutoImageProgress({ done, total })
       })
       setQuestions(withImages)
@@ -150,12 +167,44 @@ export default function AdminPage() {
     storage.saveQuestions(updatedQuestions)
   }
 
-  const handleAutoAssignImages = useCallback(async () => {
+  const handleDeleteAllPhotos = () => {
+    const questionsWithMedia = questions.filter(q => !!q.media)
+    if (questionsWithMedia.length === 0) return
+    if (confirm(`هل أنت متأكد من حذف جميع الصور والوسائط؟ (${questionsWithMedia.length} عنصر)`)) {
+      const updatedQuestions = questions.map(q => ({ ...q, media: undefined }))
+      setQuestions(updatedQuestions)
+      storage.saveQuestions(updatedQuestions)
+    }
+  }
+
+  const handleRemoveDuplicates = () => {
+    const seen = new Map<string, Question>()
+    for (const q of questions) {
+      const key = q.question.trim().toLowerCase()
+      if (!seen.has(key)) {
+        seen.set(key, q)
+      }
+    }
+    const unique = Array.from(seen.values())
+    const removed = questions.length - unique.length
+    if (removed === 0) {
+      alert('لا توجد أسئلة مكررة.')
+      return
+    }
+    if (confirm(`سيتم حذف ${removed} سؤال مكرر. هل تريد المتابعة؟`)) {
+      setQuestions(unique)
+      storage.saveQuestions(unique)
+    }
+  }
+
+  const handleAutoAssignImages = useCallback(async (source: ImageSource) => {
     if (isAutoImaging || questions.length === 0) return
+    setImageSource(source)
+    setShowImageSourceDropdown(false)
     setIsAutoImaging(true)
     setAutoImageProgress({ done: 0, total: questions.filter(q => !q.media).length })
     try {
-      const updated = await autoAssignImages(questions, (done, total) => {
+      const updated = await autoAssignImages(questions, source, (done, total) => {
         setAutoImageProgress({ done, total })
       })
       setQuestions(updated)
@@ -312,24 +361,49 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 flex-wrap">
             {questions.length > 0 && (
               <>
-                <Button
-                  onClick={handleAutoAssignImages}
-                  variant="outline"
-                  size="sm"
-                  disabled={isAutoImaging || questions.every(q => !!q.media)}
-                >
-                  {isAutoImaging ? (
-                    <>
-                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      {autoImageProgress.done}/{autoImageProgress.total}
-                    </>
-                  ) : (
-                    <>
-                      <ImagePlus className="w-4 h-4 ml-2" />
-                      صور تلقائية
-                    </>
+                <div className="relative" ref={imageDropdownRef}>
+                  <Button
+                    onClick={() => {
+                      if (!isAutoImaging && !questions.every(q => !!q.media)) {
+                        setShowImageSourceDropdown(!showImageSourceDropdown)
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    disabled={isAutoImaging || questions.every(q => !!q.media)}
+                  >
+                    {isAutoImaging ? (
+                      <>
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        {autoImageProgress.done}/{autoImageProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <ImagePlus className="w-4 h-4 ml-2" />
+                        صور تلقائية
+                        <ChevronDown className={`w-3 h-3 mr-1 transition-transform ${showImageSourceDropdown ? 'rotate-180' : ''}`} />
+                      </>
+                    )}
+                  </Button>
+                  {showImageSourceDropdown && (
+                    <div className="absolute top-full mt-1 right-0 z-50 min-w-[160px] bg-white rounded-lg border shadow-lg overflow-hidden animate-fade-slide-in">
+                      <button
+                        type="button"
+                        onClick={() => handleAutoAssignImages('wikipedia')}
+                        className={`w-full text-right px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 ${imageSource === 'wikipedia' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                      >
+                        ويكيبيديا
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAutoAssignImages('loremflickr')}
+                        className={`w-full text-right px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center gap-2 ${imageSource === 'loremflickr' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                      >
+                        LoremFlickr
+                      </button>
+                    </div>
                   )}
-                </Button>
+                </div>
                 <Button onClick={handleExport} variant="outline" size="sm">
                   <Download className="w-4 h-4 ml-2" />
                   تصدير
@@ -647,7 +721,7 @@ https://youtube.com/watch?v=abc123`}
         )}
 
         {/* Questions List */}
-        <Card>
+        <Card className={isQuestionsExpanded ? 'fixed inset-0 z-50 rounded-none overflow-auto' : ''}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -668,15 +742,48 @@ https://youtube.com/watch?v=abc123`}
               </div>
               <div className="flex items-center gap-2">
                 {questions.length > 0 && (
-                  <Button
-                    onClick={handleDeleteAll}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    <Trash2 className="w-4 h-4 ml-2" />
-                    حذف الكل
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleRemoveDuplicates}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <CopyX className="w-4 h-4 ml-2" />
+                      حذف المكرر
+                    </Button>
+                    {questions.some(q => !!q.media) && (
+                      <Button
+                        onClick={handleDeleteAllPhotos}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        disabled={isAutoImaging}
+                      >
+                        <ImageOff className="w-4 h-4 ml-2" />
+                        حذف الصور
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleDeleteAll}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <Trash2 className="w-4 h-4 ml-2" />
+                      حذف الكل
+                    </Button>
+                  </>
                 )}
+                <button
+                  onClick={() => setIsQuestionsExpanded(!isQuestionsExpanded)}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                  title={isQuestionsExpanded ? 'تصغير' : 'توسيع'}
+                >
+                  {isQuestionsExpanded ? (
+                    <Minimize2 className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4 text-gray-600" />
+                  )}
+                </button>
               </div>
             </div>
             {/* Difficulty filter bar */}
@@ -728,7 +835,7 @@ https://youtube.com/watch?v=abc123`}
                 لا توجد أسئلة بهذه الصعوبة.
               </p>
             ) : (
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+              <div className={`space-y-4 overflow-y-auto ${isQuestionsExpanded ? 'max-h-none' : 'max-h-[600px]'}`}>
                 {filteredQuestions.map((question) => (
                   <div
                     key={question.id}

@@ -8,7 +8,7 @@ import { MediaDisplay } from '@/components/MediaDisplay'
 import { CodeDisplay } from '@/components/CodeDisplay'
 import { StarBurstOnClick } from '@/components/StarBurstOnClick'
 import type { Team, Question } from '@/lib/types'
-import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus, Star } from 'lucide-react'
+import { CheckCircle2, XCircle, Flag, Eye, Plus, Minus, Star, Maximize2, Minimize2 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useMemo, useState, useEffect, useRef } from 'react'
 
@@ -71,6 +71,8 @@ export function ModeratorScreen({
     }
     return '/bell'
   }, [])
+
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Track score changes for pop animation
   const [score1Animate, setScore1Animate] = useState(false)
@@ -196,11 +198,11 @@ export function ModeratorScreen({
       </div>
 
       <StarBurstOnClick>
-      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-6">
+      <div className={`mx-auto space-y-6 relative z-10 ${isExpanded ? 'max-w-none px-2' : 'max-w-7xl'}`}>
+        <div className={`grid gap-6 ${isExpanded ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
           {/* Main Question Area */}
-          <div className="lg:col-span-2 space-y-6 min-w-0">
-            <Card className="backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl shadow-purple-500/10">
+          <div className={`space-y-6 min-w-0 ${isExpanded ? '' : 'lg:col-span-2'}`}>
+            <Card className={`backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl shadow-purple-500/10 transition-all duration-300 ${isExpanded ? 'min-h-[calc(100vh-6rem)]' : ''}`}>
               <CardHeader className="backdrop-blur-sm bg-white/[0.06] border-b border-white/10 p-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -225,28 +227,41 @@ export function ModeratorScreen({
                       ))}
                     </div>
                   </div>
-                  <Timer
-                    timeLeft={timer.timeLeft}
-                    isPaused={timer.isPaused}
-                    isRunning={timer.isRunning}
-                    onPause={onPauseTimer}
-                    onResume={onResumeTimer}
-                    onTimeUp={onTimeUp}
-                    onTick={onTimerTick}
-                    onReset={onResetTimer}
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="p-2 rounded-lg backdrop-blur-md bg-white/30 border border-white/40 hover:bg-white/50 transition-all duration-300 shadow-sm hover:shadow-md"
+                      title={isExpanded ? 'تصغير' : 'توسيع'}
+                    >
+                      {isExpanded ? (
+                        <Minimize2 className="w-4 h-4 text-gray-700" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4 text-gray-700" />
+                      )}
+                    </button>
+                    <Timer
+                      timeLeft={timer.timeLeft}
+                      isPaused={timer.isPaused}
+                      isRunning={timer.isRunning}
+                      onPause={onPauseTimer}
+                      onResume={onResumeTimer}
+                      onTimeUp={onTimeUp}
+                      onTick={onTimerTick}
+                      onReset={onResetTimer}
+                    />
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className={`space-y-6 ${isExpanded ? 'flex flex-col justify-center flex-1 py-10' : ''}`}>
                 {isAnswerRevealed ? (
                   <>
                     <div className="text-center space-y-4 animate-reveal-answer">
-                      <div className="text-xl text-gray-700 mb-2 backdrop-blur-sm bg-white/20 rounded-lg px-4 py-2 inline-block">
+                      <div className={`text-gray-700 mb-2 backdrop-blur-sm bg-white/20 rounded-lg px-4 py-2 inline-block ${isExpanded ? 'text-2xl' : 'text-xl'}`}>
                         الإجابة الصحيحة:
                       </div>
                       <div
                         dir="auto"
-                        className="text-4xl font-bold text-green-700 backdrop-blur-md bg-green-100/50 border border-green-200/50 p-6 rounded-lg whitespace-pre-line min-h-[120px] flex items-center justify-center shadow-lg shadow-green-500/10 break-words leading-relaxed"
+                        className={`font-bold text-green-700 backdrop-blur-md bg-green-100/50 border border-green-200/50 p-6 rounded-lg whitespace-pre-line flex items-center justify-center shadow-lg shadow-green-500/10 break-words leading-relaxed ${isExpanded ? 'text-5xl min-h-[200px]' : 'text-4xl min-h-[120px]'}`}
                       >
                         {currentQuestion.answer}
                       </div>
@@ -256,17 +271,17 @@ export function ModeratorScreen({
                       <Button
                         onClick={onCorrect}
                         size="lg"
-                        className="animate-button-press backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300"
+                        className={`animate-button-press backdrop-blur-md bg-green-500/80 hover:bg-green-500/90 border border-green-400/50 text-white shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 ${isExpanded ? 'px-12 py-8 text-xl' : 'px-8 py-6 text-lg'}`}
                       >
-                        <CheckCircle2 className="w-6 h-6 ml-2" />
+                        <CheckCircle2 className={`ml-2 ${isExpanded ? 'w-7 h-7' : 'w-6 h-6'}`} />
                         صحيح
                       </Button>
                       <Button
                         onClick={onIncorrect}
                         size="lg"
-                        className="animate-button-press backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300"
+                        className={`animate-button-press backdrop-blur-md bg-red-500/80 hover:bg-red-500/90 border border-red-400/50 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 ${isExpanded ? 'px-12 py-8 text-xl' : 'px-8 py-6 text-lg'}`}
                       >
-                        <XCircle className="w-6 h-6 ml-2" />
+                        <XCircle className={`ml-2 ${isExpanded ? 'w-7 h-7' : 'w-6 h-6'}`} />
                         خطأ
                       </Button>
                     </div>
@@ -275,7 +290,7 @@ export function ModeratorScreen({
                   <div key={currentQuestion.id} className="animate-fade-slide-in">
                     <div
                       dir="auto"
-                      className="text-3xl font-bold text-center min-h-[120px] flex items-center justify-center text-gray-800 break-words leading-relaxed"
+                      className={`font-bold text-center flex items-center justify-center text-gray-800 break-words leading-relaxed ${isExpanded ? 'text-5xl min-h-[200px]' : 'text-3xl min-h-[120px]'}`}
                     >
                       {currentQuestion.question}
                     </div>
@@ -296,9 +311,9 @@ export function ModeratorScreen({
                       <Button
                         onClick={onRevealAnswer}
                         size="lg"
-                        className="animate-button-press backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white px-8 py-6 text-lg shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
+                        className={`animate-button-press backdrop-blur-md bg-gradient-to-r from-blue-500/80 to-purple-500/80 hover:from-blue-500/90 hover:to-purple-500/90 border border-purple-400/50 text-white shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 ${isExpanded ? 'px-12 py-8 text-xl' : 'px-8 py-6 text-lg'}`}
                       >
-                        <Eye className="w-6 h-6 ml-2" />
+                        <Eye className={`ml-2 ${isExpanded ? 'w-7 h-7' : 'w-6 h-6'}`} />
                         كشف
                       </Button>
                     </div>
@@ -309,7 +324,7 @@ export function ModeratorScreen({
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className={`space-y-6 ${isExpanded ? 'hidden' : ''}`}>
             {/* Scoreboard */}
             <Card className="backdrop-blur-xl bg-white/30 border border-white/40 shadow-2xl shadow-purple-500/10">
               <CardHeader className="backdrop-blur-sm bg-white/10 border-b border-white/20">
